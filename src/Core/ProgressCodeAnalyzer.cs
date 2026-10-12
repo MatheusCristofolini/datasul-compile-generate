@@ -211,7 +211,7 @@ namespace DatasulCompileGen.Core
                 int openBrace = line.IndexOf('{');
                 while (openBrace >= 0)
                 {
-                    int closeBrace = line.IndexOf('}', openBrace + 1);
+                    int closeBrace = FindMatchingCloseBrace(line, openBrace);
                     int endIndex = closeBrace >= 0 ? closeBrace : line.Length;
                     string inside = line.Substring(openBrace + 1, endIndex - openBrace - 1).Trim();
 
@@ -221,8 +221,8 @@ namespace DatasulCompileGen.Core
                         if (!string.IsNullOrEmpty(firstToken) && EndsWithIncludeExtension(firstToken))
                         {
                             string normalized = NormalizePath(firstToken);
-                            string fileName = Path.GetFileName(normalized);
-                            if (!string.IsNullOrEmpty(fileName))
+                            string fileName = SafeGetFileName(normalized);
+                            if (!string.IsNullOrEmpty(fileName) && EndsWithIncludeExtension(fileName))
                             {
                                 IncludeReference includeRef = new IncludeReference();
                                 includeRef.RawReference = inside;
@@ -242,6 +242,27 @@ namespace DatasulCompileGen.Core
             return results;
         }
 
+        private static int FindMatchingCloseBrace(string line, int openBraceIndex)
+        {
+            int depth = 0;
+            for (int i = openBraceIndex; i < line.Length; i++)
+            {
+                if (line[i] == '{')
+                {
+                    depth++;
+                }
+                else if (line[i] == '}')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        return i;
+                    }
+                }
+            }
+            return -1;
+        }
+
         private static string ExtractFirstToken(string insideBrace)
         {
             string trimmed = insideBrace.Trim();
@@ -256,7 +277,7 @@ namespace DatasulCompileGen.Core
                 int endQuote = trimmed.IndexOf(quote, 1);
                 if (endQuote > 1)
                 {
-                    return trimmed.Substring(1, endQuote - 1).Trim();
+                    return SanitizeToken(trimmed.Substring(1, endQuote - 1));
                 }
             }
 
@@ -266,12 +287,49 @@ namespace DatasulCompileGen.Core
                 spaceIdx++;
             }
 
-            return trimmed.Substring(0, spaceIdx).Trim('"', '\'');
+            return SanitizeToken(trimmed.Substring(0, spaceIdx));
+        }
+
+        private static string SanitizeToken(string raw)
+        {
+            if (string.IsNullOrEmpty(raw))
+            {
+                return string.Empty;
+            }
+
+            // Remove preprocessors like {&var} if embedded and strip quotes/invalid chars
+            StringBuilder sb = new StringBuilder(raw.Length);
+            bool inNestedPreproc = false;
+            for (int i = 0; i < raw.Length; i++)
+            {
+                char c = raw[i];
+                if (c == '{')
+                {
+                    inNestedPreproc = true;
+                    continue;
+                }
+                if (c == '}')
+                {
+                    inNestedPreproc = false;
+                    continue;
+                }
+                if (inNestedPreproc)
+                {
+                    continue;
+                }
+                if (c == '"' || c == '\'' || c == '<' || c == '>' || c == '|' || c == '*' || c == '?' || c < 32)
+                {
+                    continue;
+                }
+                sb.Append(c);
+            }
+
+            return sb.ToString().Trim();
         }
 
         private static bool EndsWithIncludeExtension(string token)
         {
-            return token.EndsWith(".i", StringComparison.OrdinalIgnoreCase);
+            return !string.IsNullOrEmpty(token) && token.EndsWith(".i", StringComparison.OrdinalIgnoreCase);
         }
 
         public static string NormalizePath(string path)
@@ -280,12 +338,44 @@ namespace DatasulCompileGen.Core
             {
                 return string.Empty;
             }
-            string p = path.Trim().Replace('\\', '/');
+            string p = SanitizeToken(path).Replace('\\', '/');
             while (p.StartsWith("./"))
             {
                 p = p.Substring(2);
             }
+            while (p.Contains("//"))
+            {
+                p = p.Replace("//", "/");
+            }
             return p.TrimStart('/');
+        }
+
+        public static string SafeGetFileName(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return string.Empty;
+            }
+            int lastSlash = path.LastIndexOf('/');
+            int lastBackslash = path.LastIndexOf('\\');
+            int cut = Math.Max(lastSlash, lastBackslash);
+            string name = cut >= 0 ? path.Substring(cut + 1) : path;
+            return SanitizeToken(name);
+        }
+
+        public static string SafeGetExtension(string path)
+        {
+            string fileName = SafeGetFileName(path);
+            if (string.IsNullOrEmpty(fileName))
+            {
+                return string.Empty;
+            }
+            int lastDot = fileName.LastIndexOf('.');
+            if (lastDot < 0)
+            {
+                return string.Empty;
+            }
+            return fileName.Substring(lastDot);
         }
     }
 }

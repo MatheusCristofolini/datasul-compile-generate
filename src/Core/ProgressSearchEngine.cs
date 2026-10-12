@@ -52,9 +52,11 @@ namespace DatasulCompileGen.Core
             {
                 throw new ArgumentNullException("options");
             }
-            if (string.IsNullOrWhiteSpace(options.RootDirectory) || !Directory.Exists(options.RootDirectory))
+
+            string cleanRootInput = (options.RootDirectory ?? string.Empty).Trim().Trim('"', '\'');
+            if (string.IsNullOrWhiteSpace(cleanRootInput) || !Directory.Exists(cleanRootInput))
             {
-                throw new DirectoryNotFoundException("Diretorio raiz invalido ou inexistente: " + options.RootDirectory);
+                throw new DirectoryNotFoundException("Diretorio raiz invalido ou inexistente: " + cleanRootInput);
             }
             if (string.IsNullOrWhiteSpace(options.SearchTerm))
             {
@@ -62,7 +64,7 @@ namespace DatasulCompileGen.Core
             }
 
             Stopwatch stopwatch = Stopwatch.StartNew();
-            string rootFull = Path.GetFullPath(options.RootDirectory).TrimEnd('\\', '/');
+            string rootFull = cleanRootInput.Replace('/', '\\').TrimEnd('\\');
 
             HashSet<string> allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (options.Extensions != null)
@@ -81,7 +83,7 @@ namespace DatasulCompileGen.Core
                 }
             }
 
-            List<string> candidateFiles = EnumerateCandidateFiles(rootFull, allowedExtensions, cancellationToken);
+            List<string> candidateFiles = EnumerateCandidateFiles(rootFull, allowedExtensions, progress, cancellationToken);
             int totalFiles = candidateFiles.Count;
 
             List<ScannedFileEntry> scannedEntries = new List<ScannedFileEntry>(totalFiles);
@@ -93,72 +95,81 @@ namespace DatasulCompileGen.Core
                 : StringComparison.OrdinalIgnoreCase;
 
             string searchTerm = options.SearchTerm;
+            long lastReportMs = -100;
 
             for (int i = 0; i < totalFiles; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 string filePath = candidateFiles[i];
 
-                if (progress != null && (i % 25 == 0 || i == totalFiles - 1))
-                {
-                    SearchProgressInfo info = new SearchProgressInfo();
-                    info.ProcessedFiles = i + 1;
-                    info.TotalFiles = totalFiles;
-                    info.CurrentFile = GetRelativePath(rootFull, filePath);
-                    info.PhaseMessage = string.Format("Varrendo arquivos ({0}/{1})...", i + 1, totalFiles);
-                    progress.Report(info);
-                }
-
-                string content;
                 try
                 {
-                    content = ProgressCodeAnalyzer.ReadFileWithAutoEncoding(filePath);
+                    string relPath = GetRelativePath(rootFull, filePath);
+
+                    if (progress != null && (i == 0 || i == totalFiles - 1 || stopwatch.ElapsedMilliseconds - lastReportMs >= 30))
+                    {
+                        lastReportMs = stopwatch.ElapsedMilliseconds;
+                        int pct = totalFiles > 0 ? (int)Math.Round(((i + 1) * 100.0) / totalFiles) : 100;
+                        SearchProgressInfo info = new SearchProgressInfo();
+                        info.ProcessedFiles = i + 1;
+                        info.TotalFiles = totalFiles;
+                        info.CurrentFile = relPath;
+                        info.PhaseMessage = string.Format("Varrendo programas ({0}% — {1:N0} de {2:N0}): {3}", pct, i + 1, totalFiles, relPath);
+                        progress.Report(info);
+                    }
+
+                    string content = ProgressCodeAnalyzer.ReadFileWithAutoEncoding(filePath);
+
+                    bool needStripped = options.IgnoreComments || options.TrackIncludes;
+                    string strippedContent = needStripped
+                        ? ProgressCodeAnalyzer.StripCommentsPreservingLines(content)
+                        : string.Empty;
+
+                    string searchTargetContent = options.IgnoreComments ? strippedContent : content;
+                    List<LineMatch> directMatches = FindMatchesInContent(
+                        content,
+                        searchTargetContent,
+                        searchTerm,
+                        comparison,
+                        options.WholeWord);
+
+                    List<IncludeReference> outgoingIncludes = options.TrackIncludes
+                        ? ProgressCodeAnalyzer.ExtractIncludeReferences(content, strippedContent)
+                        : new List<IncludeReference>();
+
+                    string ext = ProgressCodeAnalyzer.SafeGetExtension(filePath);
+                    string fileName = ProgressCodeAnalyzer.SafeGetFileName(filePath);
+
+                    ScannedFileEntry entry = new ScannedFileEntry();
+                    entry.FilePath = filePath;
+                    entry.RelativePath = relPath;
+                    entry.FileName = fileName;
+                    entry.Extension = ext;
+                    entry.IsCompilable = options.CompilableExtensions != null && options.CompilableExtensions.Contains(ext);
+                    entry.DirectMatches = directMatches;
+                    entry.OutgoingIncludes = outgoingIncludes;
+
+                    scannedEntries.Add(entry);
+
+                    if (ext.Equals(".i", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(entry.FileName))
+                    {
+                        List<ScannedFileEntry> listByName;
+                        if (!includeFilesByName.TryGetValue(entry.FileName, out listByName))
+                        {
+                            listByName = new List<ScannedFileEntry>();
+                            includeFilesByName[entry.FileName] = listByName;
+                        }
+                        listByName.Add(entry);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
                 }
                 catch (Exception)
                 {
+                    // Ignora arquivos inacessíveis ou com caminhos malformados no sistema de arquivos
                     continue;
-                }
-
-                bool needStripped = options.IgnoreComments || options.TrackIncludes;
-                string strippedContent = needStripped
-                    ? ProgressCodeAnalyzer.StripCommentsPreservingLines(content)
-                    : string.Empty;
-
-                string searchTargetContent = options.IgnoreComments ? strippedContent : content;
-                List<LineMatch> directMatches = FindMatchesInContent(
-                    content,
-                    searchTargetContent,
-                    searchTerm,
-                    comparison,
-                    options.WholeWord);
-
-                List<IncludeReference> outgoingIncludes = options.TrackIncludes
-                    ? ProgressCodeAnalyzer.ExtractIncludeReferences(content, strippedContent)
-                    : new List<IncludeReference>();
-
-                string ext = Path.GetExtension(filePath) ?? string.Empty;
-                string relPath = GetRelativePath(rootFull, filePath);
-
-                ScannedFileEntry entry = new ScannedFileEntry();
-                entry.FilePath = filePath;
-                entry.RelativePath = relPath;
-                entry.FileName = Path.GetFileName(filePath) ?? string.Empty;
-                entry.Extension = ext;
-                entry.IsCompilable = options.CompilableExtensions != null && options.CompilableExtensions.Contains(ext);
-                entry.DirectMatches = directMatches;
-                entry.OutgoingIncludes = outgoingIncludes;
-
-                scannedEntries.Add(entry);
-
-                if (ext.Equals(".i", StringComparison.OrdinalIgnoreCase))
-                {
-                    List<ScannedFileEntry> listByName;
-                    if (!includeFilesByName.TryGetValue(entry.FileName, out listByName))
-                    {
-                        listByName = new List<ScannedFileEntry>();
-                        includeFilesByName[entry.FileName] = listByName;
-                    }
-                    listByName.Add(entry);
                 }
             }
 
@@ -461,11 +472,13 @@ namespace DatasulCompileGen.Core
         private static List<string> EnumerateCandidateFiles(
             string rootDirectory,
             HashSet<string> allowedExtensions,
+            IProgress<SearchProgressInfo> progress,
             CancellationToken cancellationToken)
         {
             List<string> files = new List<string>();
             Stack<string> dirs = new Stack<string>();
             dirs.Push(rootDirectory);
+            Stopwatch enumClock = Stopwatch.StartNew();
 
             while (dirs.Count > 0)
             {
@@ -485,7 +498,7 @@ namespace DatasulCompileGen.Core
                 // Push in reverse order so traversal is alphabetical
                 for (int i = subDirs.Length - 1; i >= 0; i--)
                 {
-                    string dirName = Path.GetFileName(subDirs[i]);
+                    string dirName = ProgressCodeAnalyzer.SafeGetFileName(subDirs[i]);
                     if (!string.IsNullOrEmpty(dirName) && !dirName.StartsWith("."))
                     {
                         dirs.Push(subDirs[i]);
@@ -504,11 +517,22 @@ namespace DatasulCompileGen.Core
 
                 foreach (string file in dirFiles)
                 {
-                    string ext = Path.GetExtension(file);
+                    string ext = ProgressCodeAnalyzer.SafeGetExtension(file);
                     if (!string.IsNullOrEmpty(ext) && allowedExtensions.Contains(ext))
                     {
                         files.Add(file);
                     }
+                }
+
+                if (progress != null && enumClock.ElapsedMilliseconds >= 50)
+                {
+                    enumClock.Restart();
+                    SearchProgressInfo pInfo = new SearchProgressInfo();
+                    pInfo.ProcessedFiles = files.Count;
+                    pInfo.TotalFiles = 0;
+                    pInfo.CurrentFile = currentDir;
+                    pInfo.PhaseMessage = string.Format("Mapeando diretórios... {0:N0} arquivos Progress localizados", files.Count);
+                    progress.Report(pInfo);
                 }
             }
 
@@ -517,10 +541,12 @@ namespace DatasulCompileGen.Core
 
         public static string GetRelativePath(string rootFull, string fullFilePath)
         {
-            string normalizedRoot = rootFull.Replace('\\', '/').TrimEnd('/');
-            string normalizedFile = Path.GetFullPath(fullFilePath).Replace('\\', '/');
+            if (string.IsNullOrEmpty(fullFilePath)) return string.Empty;
+            string normalizedRoot = (rootFull ?? string.Empty).Replace('\\', '/').TrimEnd('/');
+            string normalizedFile = fullFilePath.Replace('\\', '/');
 
-            if (normalizedFile.StartsWith(normalizedRoot + "/", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(normalizedRoot) &&
+                normalizedFile.StartsWith(normalizedRoot + "/", StringComparison.OrdinalIgnoreCase))
             {
                 return normalizedFile.Substring(normalizedRoot.Length + 1);
             }
@@ -528,3 +554,4 @@ namespace DatasulCompileGen.Core
         }
     }
 }
+

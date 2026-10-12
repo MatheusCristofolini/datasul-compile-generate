@@ -136,21 +136,22 @@ namespace DatasulCompileGen.Tests
                 "{include/es-nivel1.i}\r\n",
                 Encoding.UTF8);
 
-            // 4. esp/es0002.w (Inclui es-nivel2.i, logo depende indiretamente de es-nivel1.i)
+            // 4. esp/es0002.w (Inclui es-nivel2.i com aspas e tags malformadas/macros para testar resiliencia contra 'Illegal characters in path')
             File.WriteAllText(
                 Path.Combine(espDir, "es0002.w"),
                 "&ANALYZE-SUSPEND _VERSION-NUMBER UIB_v8r12 GUI\r\n" +
                 "/* Janela de Consulta */\r\n" +
-                "{include/es-nivel2.i}\r\n" +
+                "{\"include/es-nivel2.i\"}\r\n" +
+                "{<macro>|*?\"invalido\".i}\r\n" +
                 "/* {include/inexistente.i} comentada nao deve afetar */\r\n",
                 Encoding.UTF8);
 
-            // 5. cls/CalculoImposto.cls (Inclui es-nivel1.i passando parâmetros de pré-processador)
+            // 5. cls/CalculoImposto.cls (Inclui es-nivel1.i passando macro {&dir} e parâmetros de pré-processador)
             File.WriteAllText(
                 Path.Combine(clsDir, "CalculoImposto.cls"),
                 "CLASS cls.CalculoImposto:\r\n" +
                 "    METHOD PUBLIC VOID Calcular():\r\n" +
-                "        {es-nivel1.i &modo=\"calc\"}\r\n" +
+                "        {{&dir}/es-nivel1.i &modo=\"calc\"}\r\n" +
                 "    END METHOD.\r\n" +
                 "END CLASS.\r\n",
                 Encoding.UTF8);
