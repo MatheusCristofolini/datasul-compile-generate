@@ -23,6 +23,7 @@ $outDistExe = Join-Path $distDir "DatasulCompileGen.exe"
 
 $sources = @(
     (Join-Path $rootDir "src\Core\SearchModels.cs"),
+    (Join-Path $rootDir "src\Core\AppCacheService.cs"),
     (Join-Path $rootDir "src\Core\ProgressCodeAnalyzer.cs"),
     (Join-Path $rootDir "src\Core\ProgressSearchEngine.cs"),
     (Join-Path $rootDir "src\Core\CompileScriptGenerator.cs"),

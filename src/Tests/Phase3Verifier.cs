@@ -49,9 +49,13 @@ namespace DatasulCompileGen.Tests
 
                     SearchReport report = engine.ExecuteSearch(opts, null, CancellationToken.None);
 
-                    MainForm form = new MainForm();
+                    string tempCacheFile = Path.Combine(tempDir, "test-cache.cfg");
+                    MainForm form = new MainForm(new AppCacheService(tempCacheFile));
                     try
                     {
+                        Assert(form.GetPathFormatIndex() == 1,
+                            "A opcao de Caminho Absoluto Completo (index 1) deve vir marcada por padrao.");
+
                         form.LoadReportIntoUI(report);
 
                         Assert(form.GetCompilableListViewCount() == 2,
@@ -60,20 +64,24 @@ namespace DatasulCompileGen.Tests
                         Assert(form.GetTreeNodesCount() == 3,
                             "Arvore estilo VS Code deveria ter 3 arquivos (2 compilaveis + 1 include), mas teve " + form.GetTreeNodesCount());
 
-                        // Modo padrao: Com Log de Erros + Caminho Relativo
+                        // Modo padrao: Com Log de Erros no SESSION:TEMP-DIRECTORY + Caminho Absoluto Completo
+                        string expectedAbs10 = Path.Combine(tempDir, "esp", "es0010.p").Replace('\\', '/');
                         string previewLogMode = form.GetGeneratedScriptPreviewText();
-                        Assert(previewLogMode.Contains("RUN pi-compilar (INPUT \"esp/es0010.p\")."),
-                            "Preview no modo Log de Erros deveria conter RUN pi-compilar para esp/es0010.p.");
+                        Assert(previewLogMode.Contains("SESSION:TEMP-DIRECTORY"),
+                            "Preview no modo Log de Erros deveria gravar o log em SESSION:TEMP-DIRECTORY.");
+                        Assert(previewLogMode.Contains("RUN pi-compilar (INPUT \"" + expectedAbs10 + "\")."),
+                            "Preview padrao deveria apresentar o caminho absoluto para es0010.p.");
                         Assert(previewLogMode.Contains("COMPILE VALUE(p-cod-prog) SAVE NO-ERROR."),
                             "Preview no modo Log de Erros deveria conter COMPILE VALUE(p-cod-prog) SAVE NO-ERROR.");
 
-                        // Alternar para Modo Puro via pill segmentado
+                        // Alternar para Modo Puro + Caminho Relativo via pills segmentados
+                        form.SetPathFormatIndex(0);
                         form.SetScriptModeIndex(1);
                         string previewPureMode = form.GetGeneratedScriptPreviewText();
                         Assert(previewPureMode.Contains("COMPILE esp/es0010.p SAVE."),
-                            "Preview no Modo Puro deveria conter COMPILE esp/es0010.p SAVE.");
+                            "Preview no Modo Puro Relativo deveria conter COMPILE esp/es0010.p SAVE.");
                         Assert(previewPureMode.Contains("COMPILE esp/es0020.w SAVE."),
-                            "Preview no Modo Puro deveria conter COMPILE esp/es0020.w SAVE.");
+                            "Preview no Modo Puro Relativo deveria conter COMPILE esp/es0020.w SAVE.");
                     }
                     finally
                     {

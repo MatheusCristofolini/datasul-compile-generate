@@ -29,7 +29,7 @@ namespace DatasulCompileGen.Core
 
         public CompileScriptOptions()
         {
-            PathFormat = CompilePathFormat.RelativeToRoot;
+            PathFormat = CompilePathFormat.AbsolutePath;
             ScriptMode = CompileScriptMode.WithErrorLog;
             UseForwardSlashes = true;
             SearchTermUsed = string.Empty;
@@ -82,20 +82,25 @@ namespace DatasulCompileGen.Core
         {
             StringBuilder sb = new StringBuilder();
             string defaultLogFileName = "compile-errors.log";
-            string fallbackLogPath = defaultLogFileName;
 
             if (!string.IsNullOrWhiteSpace(options.TargetScriptFilePath))
             {
                 try
                 {
-                    string fullTarget = Path.GetFullPath(options.TargetScriptFilePath);
-                    string logPath = Path.ChangeExtension(fullTarget, ".log");
-                    fallbackLogPath = logPath.Replace('\\', '/');
-                    defaultLogFileName = Path.GetFileName(fallbackLogPath);
+                    string safeName = ProgressCodeAnalyzer.SafeGetFileName(options.TargetScriptFilePath);
+                    if (!string.IsNullOrWhiteSpace(safeName))
+                    {
+                        int dotIdx = safeName.LastIndexOf('.');
+                        string baseName = dotIdx > 0 ? safeName.Substring(0, dotIdx) : safeName;
+                        if (!string.IsNullOrWhiteSpace(baseName))
+                        {
+                            defaultLogFileName = baseName + ".log";
+                        }
+                    }
                 }
                 catch (Exception)
                 {
-                    fallbackLogPath = "compile-errors.log";
+                    defaultLogFileName = "compile-errors.log";
                 }
             }
 
@@ -115,21 +120,14 @@ namespace DatasulCompileGen.Core
             sb.AppendLine();
             sb.AppendLine("DEFINE STREAM s-log.");
             sb.AppendLine("DEFINE VARIABLE c-arq-log   AS CHARACTER NO-UNDO.");
-            sb.AppendLine("DEFINE VARIABLE c-dir-script AS CHARACTER NO-UNDO.");
+            sb.AppendLine("DEFINE VARIABLE c-dir-temp  AS CHARACTER NO-UNDO.");
             sb.AppendLine("DEFINE VARIABLE i-tot-erros AS INTEGER   NO-UNDO.");
             sb.AppendLine();
-            sb.AppendLine("/* Resolve o caminho do .log no mesmo diretorio do script .p */");
-            sb.AppendLine("ASSIGN FILE-INFO:FILE-NAME = THIS-PROCEDURE:FILE-NAME.");
-            sb.AppendLine("IF FILE-INFO:FULL-PATHNAME <> ? AND INDEX(THIS-PROCEDURE:FILE-NAME, \".ped\") = 0 THEN DO:");
-            sb.AppendLine("    ASSIGN c-dir-script = REPLACE(FILE-INFO:FULL-PATHNAME, \"\\\", \"/\").");
-            sb.AppendLine("    IF R-INDEX(c-dir-script, \"/\") > 0 THEN");
-            sb.AppendFormat("        ASSIGN c-arq-log = SUBSTRING(c-dir-script, 1, R-INDEX(c-dir-script, \"/\")) + \"{0}\".", EscapeProgressString(defaultLogFileName)).AppendLine();
-            sb.AppendLine("    ELSE");
-            sb.AppendFormat("        ASSIGN c-arq-log = \"{0}\".", EscapeProgressString(fallbackLogPath)).AppendLine();
-            sb.AppendLine("END.");
-            sb.AppendLine("ELSE DO:");
-            sb.AppendFormat("    ASSIGN c-arq-log = \"{0}\".", EscapeProgressString(fallbackLogPath)).AppendLine();
-            sb.AppendLine("END.");
+            sb.AppendLine("/* Resolve o caminho do .log no SESSION:TEMP-DIRECTORY da sessao Progress */");
+            sb.AppendLine("ASSIGN c-dir-temp = REPLACE(SESSION:TEMP-DIRECTORY, \"\\\", \"/\").");
+            sb.AppendLine("IF c-dir-temp <> \"\" AND SUBSTRING(c-dir-temp, LENGTH(c-dir-temp), 1) <> \"/\" THEN");
+            sb.AppendLine("    ASSIGN c-dir-temp = c-dir-temp + \"/\".");
+            sb.AppendFormat("ASSIGN c-arq-log = c-dir-temp + \"{0}\".", EscapeProgressString(defaultLogFileName)).AppendLine();
             sb.AppendLine();
             sb.AppendLine("/* Remove arquivo de log anterior caso exista */");
             sb.AppendLine("OS-DELETE VALUE(c-arq-log) NO-ERROR.");
@@ -146,7 +144,7 @@ namespace DatasulCompileGen.Core
             sb.AppendLine("/* Exibe alerta no final APENAS se ocorrerem erros de compilacao */");
             sb.AppendLine("IF i-tot-erros > 0 THEN DO:");
             sb.AppendLine("    MESSAGE \"Ocorreram erros durante a compilacao de \" + STRING(i-tot-erros) + \" programa(s).\" SKIP(1)");
-            sb.AppendLine("            \"Verifique o arquivo de log gerado no diretorio do script:\" SKIP");
+            sb.AppendLine("            \"Verifique o arquivo de log gerado em SESSION:TEMP-DIRECTORY:\" SKIP");
             sb.AppendLine("            c-arq-log");
             sb.AppendLine("        VIEW-AS ALERT-BOX ERROR BUTTONS OK TITLE \"Erros de Compilacao\".");
             sb.AppendLine("END.");

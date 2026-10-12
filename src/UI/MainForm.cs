@@ -64,11 +64,14 @@ namespace DatasulCompileGen.UI
         private const string SvgStop = "M18 6L6 18 M6 6l12 12";
         private const string SvgExternal = "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6 M15 3h6v6 M10 14L21 3";
         private const string SvgLayers = "M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5";
+        private const string SvgHistory = "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8 M3 3v5h5 M12 7v5l4 2";
 
         // Controles de Busca
         private TextBox _txtRootDir;
+        private Button _btnRecentDirs;
         private Button _btnBrowseDir;
         private TextBox _txtSearchTerm;
+        private Button _btnRecentTerms;
         private TextBox _txtExtensions;
         private CheckBox _chkTrackIncludes;
         private CheckBox _chkIgnoreComments;
@@ -111,8 +114,8 @@ namespace DatasulCompileGen.UI
         private Button _btnModePure;
         private Button _btnPathRelative;
         private Button _btnPathAbsolute;
-        private int _scriptModeIndex; // 0 = WithErrorLog, 1 = PureCompileSave
-        private int _pathFormatIndex; // 0 = RelativeToRoot, 1 = AbsolutePath
+        private int _scriptModeIndex; // 0 = WithErrorLog (SESSION:TEMP-DIRECTORY), 1 = PureCompileSave
+        private int _pathFormatIndex; // 0 = RelativeToRoot, 1 = AbsolutePath (Padrão = 1)
         private RichTextBox _rtbScriptPreview;
         private string _cachedScriptPreviewText;
 
@@ -127,25 +130,38 @@ namespace DatasulCompileGen.UI
         private TextBlock _lblStatus;
         private ProgressBar _progressBar;
 
-        // Serviços e Estado
+        // Serviços, Cache e Estado
         private readonly ProgressSearchEngine _searchEngine;
         private readonly CompileScriptGenerator _scriptGenerator;
+        private readonly AppCacheService _cacheService;
+        private AppCacheData _cacheData;
+        private bool _isLoadingCache;
         private CancellationTokenSource _cts;
         private SearchReport _currentReport;
         private string _currentPreviewFilePath;
         private Border _selectedProgramCardBorder;
 
         public MainForm()
+            : this(null)
+        {
+        }
+
+        public MainForm(AppCacheService customCacheService)
         {
             _searchEngine = new ProgressSearchEngine();
             _scriptGenerator = new CompileScriptGenerator();
+            _cacheService = customCacheService ?? new AppCacheService();
+            _cacheData = _cacheService.Load();
             _currentPreviewFilePath = string.Empty;
             _cachedScriptPreviewText = string.Empty;
             _scriptModeIndex = 0;
-            _pathFormatIndex = 0;
+            _pathFormatIndex = 1; // Marcado Caminho Absoluto por padrão
 
             InitializeGlobalResources();
             InitializeLayout();
+            ApplyCacheToUI();
+            HookAutoSaveCacheEvents();
+            Closing += (s, e) => SaveCurrentStateToCache();
         }
 
         private static SolidColorBrush Freeze(SolidColorBrush brush)
@@ -350,10 +366,12 @@ namespace DatasulCompileGen.UI
             grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(10) });
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-            // Linha 1: Diretório + Botão Procurar + Extensões
+            // Linha 1: Diretório + Botão Recentes + Botão Procurar + Extensões
             Grid row1 = new Grid();
             row1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            row1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
+            row1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            row1.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
             row1.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
             row1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(210) });
@@ -365,17 +383,31 @@ namespace DatasulCompileGen.UI
             Grid.SetColumn(dirGroup, 0);
             row1.Children.Add(dirGroup);
 
+            _btnRecentDirs = CreateActionButton(
+                "Recentes ▾",
+                SvgHistory,
+                BrushBgElevated,
+                new SolidColorBrush(Color.FromRgb(51, 65, 85)),
+                ColBorderDefault,
+                114,
+                36);
+            _btnRecentDirs.VerticalAlignment = VerticalAlignment.Bottom;
+            _btnRecentDirs.ToolTip = "Selecionar um dos últimos diretórios utilizados";
+            _btnRecentDirs.Click += OnRecentDirsClick;
+            Grid.SetColumn(_btnRecentDirs, 2);
+            row1.Children.Add(_btnRecentDirs);
+
             _btnBrowseDir = CreateActionButton(
                 "Procurar Pasta",
                 SvgFolder,
                 BrushBgElevated,
-                 new SolidColorBrush(Color.FromRgb(51, 65, 85)),
+                new SolidColorBrush(Color.FromRgb(51, 65, 85)),
                 ColBorderDefault,
                 135,
                 36);
             _btnBrowseDir.VerticalAlignment = VerticalAlignment.Bottom;
             _btnBrowseDir.Click += OnBrowseDirectoryClick;
-            Grid.SetColumn(_btnBrowseDir, 2);
+            Grid.SetColumn(_btnBrowseDir, 4);
             row1.Children.Add(_btnBrowseDir);
 
             StackPanel extGroup = new StackPanel();
@@ -383,16 +415,18 @@ namespace DatasulCompileGen.UI
             _txtExtensions = CreateModernTextBox(SvgCode, ".p, .w, .i, .cls", true);
             _txtExtensions.Text = ".p, .w, .i, .cls";
             extGroup.Children.Add(_txtExtensions);
-            Grid.SetColumn(extGroup, 4);
+            Grid.SetColumn(extGroup, 6);
             row1.Children.Add(extGroup);
 
             Grid.SetRow(row1, 0);
             grid.Children.Add(row1);
 
-            // Linha 2: Palavra-chave / Tabela + Buscar + Cancelar
+            // Linha 2: Palavra-chave / Tabela + Botão Recentes + Buscar + Cancelar
             Grid row2 = new Grid();
             row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
+            row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            row2.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
             row2.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
             row2.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -405,6 +439,20 @@ namespace DatasulCompileGen.UI
             Grid.SetColumn(searchGroup, 0);
             row2.Children.Add(searchGroup);
 
+            _btnRecentTerms = CreateActionButton(
+                "Recentes ▾",
+                SvgHistory,
+                BrushBgElevated,
+                new SolidColorBrush(Color.FromRgb(51, 65, 85)),
+                ColBorderDefault,
+                114,
+                36);
+            _btnRecentTerms.VerticalAlignment = VerticalAlignment.Bottom;
+            _btnRecentTerms.ToolTip = "Selecionar uma das últimas palavras-chave ou tabelas pesquisadas";
+            _btnRecentTerms.Click += OnRecentTermsClick;
+            Grid.SetColumn(_btnRecentTerms, 2);
+            row2.Children.Add(_btnRecentTerms);
+
             _btnSearch = CreateActionButton(
                 "Buscar Programas",
                 SvgSearch,
@@ -415,7 +463,7 @@ namespace DatasulCompileGen.UI
                 36);
             _btnSearch.VerticalAlignment = VerticalAlignment.Bottom;
             _btnSearch.Click += OnSearchClick;
-            Grid.SetColumn(_btnSearch, 2);
+            Grid.SetColumn(_btnSearch, 4);
             row2.Children.Add(_btnSearch);
 
             _btnCancel = CreateActionButton(
@@ -430,7 +478,7 @@ namespace DatasulCompileGen.UI
             _btnCancel.IsEnabled = false;
             _btnCancel.Opacity = 0.45;
             _btnCancel.Click += OnCancelSearchClick;
-            Grid.SetColumn(_btnCancel, 4);
+            Grid.SetColumn(_btnCancel, 6);
             row2.Children.Add(_btnCancel);
 
             Grid.SetRow(row2, 2);
@@ -971,7 +1019,7 @@ namespace DatasulCompileGen.UI
             scriptOptGrid.Children.Add(lblModeTitle);
 
             UniformGrid modePills = new UniformGrid { Columns = 2 };
-            _btnModeErrorLog = CreateSegmentedOptionButton("Com Log de Erros (NO-ERROR + .log)", true);
+            _btnModeErrorLog = CreateSegmentedOptionButton("Com Log no Session-Temp (NO-ERROR + .log)", true);
             _btnModePure = CreateSegmentedOptionButton("Modo Puro (Apenas COMPILE SAVE.)", false);
             _btnModeErrorLog.Click += (s, e) => SetScriptModeIndex(0);
             _btnModePure.Click += (s, e) => SetScriptModeIndex(1);
@@ -1008,8 +1056,8 @@ namespace DatasulCompileGen.UI
             scriptOptGrid.Children.Add(lblPathTitle);
 
             UniformGrid pathPills = new UniformGrid { Columns = 2 };
-            _btnPathRelative = CreateSegmentedOptionButton("Caminho Relativo (Padrão PROPATH)", true);
-            _btnPathAbsolute = CreateSegmentedOptionButton("Caminho Absoluto Completo", false);
+            _btnPathRelative = CreateSegmentedOptionButton("Caminho Relativo (Padrão PROPATH)", false);
+            _btnPathAbsolute = CreateSegmentedOptionButton("Caminho Absoluto Completo", true);
             _btnPathRelative.Click += (s, e) => SetPathFormatIndex(0);
             _btnPathAbsolute.Click += (s, e) => SetPathFormatIndex(1);
             pathPills.Children.Add(_btnPathRelative);
@@ -1563,14 +1611,17 @@ namespace DatasulCompileGen.UI
             using (WinForms.FolderBrowserDialog dlg = new WinForms.FolderBrowserDialog())
             {
                 dlg.Description = "Selecione o diretório raiz dos programas Progress Datasul:";
-                if (!string.IsNullOrWhiteSpace(_txtRootDir.Text) && Directory.Exists(_txtRootDir.Text))
+                string currentDir = _txtRootDir.Text.Trim().Trim('"', '\'');
+                if (!string.IsNullOrWhiteSpace(currentDir) && Directory.Exists(currentDir))
                 {
-                    dlg.SelectedPath = _txtRootDir.Text;
+                    dlg.SelectedPath = currentDir;
                 }
 
                 if (dlg.ShowDialog() == WinForms.DialogResult.OK)
                 {
                     _txtRootDir.Text = dlg.SelectedPath;
+                    AppCacheService.AddRecentDirectory(_cacheData, dlg.SelectedPath);
+                    SaveCurrentStateToCache();
                 }
             }
         }
@@ -1609,6 +1660,11 @@ namespace DatasulCompileGen.UI
                 _txtSearchTerm.Focus();
                 return;
             }
+
+            // Registra no cache o diretório, o termo pesquisado e todas as opções atuais
+            AppCacheService.AddRecentDirectory(_cacheData, rootDir);
+            AppCacheService.AddRecentSearchTerm(_cacheData, searchTerm);
+            SaveCurrentStateToCache();
 
             SearchOptions options = BuildSearchOptionsFromUI(rootDir, searchTerm);
             SetSearchingState(true);
@@ -1726,6 +1782,8 @@ namespace DatasulCompileGen.UI
             _btnCancel.IsEnabled = searching;
             _btnCancel.Opacity = searching ? 1.0 : 0.45;
             _btnBrowseDir.IsEnabled = !searching;
+            if (_btnRecentDirs != null) _btnRecentDirs.IsEnabled = !searching;
+            if (_btnRecentTerms != null) _btnRecentTerms.IsEnabled = !searching;
             _progressBar.Visibility = searching ? Visibility.Visible : Visibility.Collapsed;
             _statusDot.Fill = searching ? BrushBorderFocus : BrushEmeraldHover;
             if (searching)
@@ -2426,12 +2484,28 @@ namespace DatasulCompileGen.UI
                 dlg.Filter = "Programa Progress ABL (*.p)|*.p|Todos os Arquivos (*.*)|*.*";
                 dlg.FileName = defaultFileName;
                 dlg.DefaultExt = "p";
+                if (_cacheData != null && !string.IsNullOrWhiteSpace(_cacheData.LastExportDirectory) && Directory.Exists(_cacheData.LastExportDirectory))
+                {
+                    dlg.InitialDirectory = _cacheData.LastExportDirectory;
+                }
 
                 if (dlg.ShowDialog() == WinForms.DialogResult.OK)
                 {
                     CompileScriptOptions opts = BuildCompileScriptOptions(dlg.FileName);
                     string finalScript = _scriptGenerator.GenerateScript(_currentReport.CompilableResults, opts);
                     _scriptGenerator.SaveScriptToFile(finalScript, dlg.FileName);
+
+                    if (_cacheData != null)
+                    {
+                        try
+                        {
+                            _cacheData.LastExportDirectory = System.IO.Path.GetDirectoryName(dlg.FileName);
+                            SaveCurrentStateToCache();
+                        }
+                        catch (Exception)
+                        {
+                        }
+                    }
 
                     _cachedScriptPreviewText = finalScript;
                     SetRichTextPlain(_rtbScriptPreview, finalScript);
@@ -2478,6 +2552,300 @@ namespace DatasulCompileGen.UI
             return new string(input.Trim().Select(c => invalid.Contains(c) ? '-' : c).ToArray());
         }
 
+        // ── Persistência em Cache (Configurações, Diretórios e Termos Recentes) ────
+
+        private void ApplyCacheToUI()
+        {
+            _isLoadingCache = true;
+            try
+            {
+                if (_cacheData == null)
+                {
+                    _cacheData = new AppCacheData();
+                }
+
+                if (!string.IsNullOrWhiteSpace(_cacheData.LastRootDirectory))
+                {
+                    _txtRootDir.Text = _cacheData.LastRootDirectory;
+                }
+                if (!string.IsNullOrWhiteSpace(_cacheData.LastSearchTerm))
+                {
+                    _txtSearchTerm.Text = _cacheData.LastSearchTerm;
+                }
+                if (!string.IsNullOrWhiteSpace(_cacheData.Extensions))
+                {
+                    _txtExtensions.Text = _cacheData.Extensions;
+                }
+
+                _chkTrackIncludes.IsChecked = _cacheData.TrackIncludes;
+                _chkIgnoreComments.IsChecked = _cacheData.IgnoreComments;
+                _chkWholeWord.IsChecked = _cacheData.WholeWord;
+                _chkCaseSensitive.IsChecked = _cacheData.CaseSensitive;
+
+                if (!string.IsNullOrEmpty(_cacheData.FilterText) && _txtFilterCompilables != null)
+                {
+                    _txtFilterCompilables.Text = _cacheData.FilterText;
+                }
+
+                int modeIdx = (_cacheData.ScriptModeIndex == 1) ? 1 : 0;
+                int pathIdx = (_cacheData.PathFormatIndex == 0) ? 0 : 1; // 1 = Caminho Absoluto por padrão
+
+                SetScriptModeIndex(modeIdx);
+                SetPathFormatIndex(pathIdx);
+                UpdateRecentButtonsTooltip();
+            }
+            finally
+            {
+                _isLoadingCache = false;
+            }
+        }
+
+        private void HookAutoSaveCacheEvents()
+        {
+            _txtRootDir.LostFocus += (s, e) => SaveCurrentStateToCache();
+            _txtSearchTerm.LostFocus += (s, e) => SaveCurrentStateToCache();
+            _txtExtensions.LostFocus += (s, e) => SaveCurrentStateToCache();
+            _txtFilterCompilables.LostFocus += (s, e) => SaveCurrentStateToCache();
+
+            _chkTrackIncludes.Checked += (s, e) => SaveCurrentStateToCache();
+            _chkTrackIncludes.Unchecked += (s, e) => SaveCurrentStateToCache();
+            _chkIgnoreComments.Checked += (s, e) => SaveCurrentStateToCache();
+            _chkIgnoreComments.Unchecked += (s, e) => SaveCurrentStateToCache();
+            _chkWholeWord.Checked += (s, e) => SaveCurrentStateToCache();
+            _chkWholeWord.Unchecked += (s, e) => SaveCurrentStateToCache();
+            _chkCaseSensitive.Checked += (s, e) => SaveCurrentStateToCache();
+            _chkCaseSensitive.Unchecked += (s, e) => SaveCurrentStateToCache();
+        }
+
+        public void SaveCurrentStateToCache()
+        {
+            if (_isLoadingCache || _cacheService == null)
+            {
+                return;
+            }
+
+            if (_cacheData == null)
+            {
+                _cacheData = new AppCacheData();
+            }
+
+            _cacheData.LastRootDirectory = _txtRootDir != null ? _txtRootDir.Text.Trim().Trim('"', '\'') : string.Empty;
+            _cacheData.LastSearchTerm = _txtSearchTerm != null ? _txtSearchTerm.Text.Trim() : string.Empty;
+            _cacheData.Extensions = _txtExtensions != null ? _txtExtensions.Text.Trim() : ".p, .w, .i, .cls";
+            _cacheData.TrackIncludes = _chkTrackIncludes != null && _chkTrackIncludes.IsChecked == true;
+            _cacheData.IgnoreComments = _chkIgnoreComments != null && _chkIgnoreComments.IsChecked == true;
+            _cacheData.WholeWord = _chkWholeWord != null && _chkWholeWord.IsChecked == true;
+            _cacheData.CaseSensitive = _chkCaseSensitive != null && _chkCaseSensitive.IsChecked == true;
+            _cacheData.ScriptModeIndex = _scriptModeIndex;
+            _cacheData.PathFormatIndex = _pathFormatIndex;
+            _cacheData.FilterText = _txtFilterCompilables != null ? _txtFilterCompilables.Text.Trim() : string.Empty;
+
+            _cacheService.Save(_cacheData);
+            UpdateRecentButtonsTooltip();
+        }
+
+        private void UpdateRecentButtonsTooltip()
+        {
+            int dirCount = (_cacheData != null && _cacheData.RecentDirectories != null) ? _cacheData.RecentDirectories.Count : 0;
+            int termCount = (_cacheData != null && _cacheData.RecentSearchTerms != null) ? _cacheData.RecentSearchTerms.Count : 0;
+
+            if (_btnRecentDirs != null)
+            {
+                _btnRecentDirs.ToolTip = string.Format("Diretórios recentes salvos em cache ({0})", dirCount);
+            }
+            if (_btnRecentTerms != null)
+            {
+                _btnRecentTerms.ToolTip = string.Format("Palavras-chave e tabelas recentes salvas em cache ({0})", termCount);
+            }
+        }
+
+        private void OnRecentDirsClick(object sender, RoutedEventArgs e)
+        {
+            List<string> dirs = (_cacheData != null && _cacheData.RecentDirectories != null)
+                ? _cacheData.RecentDirectories
+                : new List<string>();
+
+            ShowHistoryPopup(
+                _btnRecentDirs,
+                "DIRETÓRIOS DE BUSCA RECENTES",
+                dirs,
+                "Nenhum diretório salvo no histórico ainda.",
+                selectedDir =>
+                {
+                    _txtRootDir.Text = selectedDir;
+                    AppCacheService.AddRecentDirectory(_cacheData, selectedDir);
+                    SaveCurrentStateToCache();
+                },
+                () =>
+                {
+                    if (_cacheData != null)
+                    {
+                        _cacheData.RecentDirectories.Clear();
+                        SaveCurrentStateToCache();
+                    }
+                });
+        }
+
+        private void OnRecentTermsClick(object sender, RoutedEventArgs e)
+        {
+            List<string> terms = (_cacheData != null && _cacheData.RecentSearchTerms != null)
+                ? _cacheData.RecentSearchTerms
+                : new List<string>();
+
+            ShowHistoryPopup(
+                _btnRecentTerms,
+                "PALAVRAS-CHAVE / TABELAS RECENTES",
+                terms,
+                "Nenhuma palavra-chave salva no histórico ainda.",
+                selectedTerm =>
+                {
+                    _txtSearchTerm.Text = selectedTerm;
+                    AppCacheService.AddRecentSearchTerm(_cacheData, selectedTerm);
+                    SaveCurrentStateToCache();
+                    _txtSearchTerm.Focus();
+                },
+                () =>
+                {
+                    if (_cacheData != null)
+                    {
+                        _cacheData.RecentSearchTerms.Clear();
+                        SaveCurrentStateToCache();
+                    }
+                });
+        }
+
+        private void ShowHistoryPopup(
+            Button anchorButton,
+            string headerTitle,
+            List<string> items,
+            string emptyMessage,
+            Action<string> onSelect,
+            Action onClear)
+        {
+            Popup popup = new Popup
+            {
+                PlacementTarget = anchorButton,
+                Placement = PlacementMode.Bottom,
+                StaysOpen = false,
+                AllowsTransparency = true,
+                VerticalOffset = 4
+            };
+
+            Border outer = new Border
+            {
+                Background = BrushBgSurface,
+                BorderBrush = BrushBorderFocus,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(9),
+                Padding = new Thickness(8),
+                MinWidth = 380,
+                MaxWidth = 640,
+                MaxHeight = 340
+            };
+
+            StackPanel rootStack = new StackPanel();
+
+            Grid headerGrid = new Grid { Margin = new Thickness(4, 2, 4, 6) };
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            TextBlock lblHeader = new TextBlock
+            {
+                Text = headerTitle,
+                FontSize = 10.5,
+                FontWeight = FontWeights.Bold,
+                Foreground = BrushBorderFocus,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(lblHeader, 0);
+            headerGrid.Children.Add(lblHeader);
+
+            if (items != null && items.Count > 0)
+            {
+                Button btnClear = CreateSmallSecondaryButton("Limpar Histórico");
+                btnClear.Height = 24;
+                btnClear.FontSize = 11;
+                btnClear.Click += (s, ev) =>
+                {
+                    popup.IsOpen = false;
+                    if (onClear != null) onClear();
+                };
+                Grid.SetColumn(btnClear, 1);
+                headerGrid.Children.Add(btnClear);
+            }
+
+            rootStack.Children.Add(headerGrid);
+
+            ScrollViewer sv = new ScrollViewer
+            {
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                MaxHeight = 270
+            };
+            StackPanel listStack = new StackPanel();
+
+            if (items == null || items.Count == 0)
+            {
+                listStack.Children.Add(new TextBlock
+                {
+                    Text = emptyMessage,
+                    FontSize = 12,
+                    Foreground = BrushTextMuted,
+                    Margin = new Thickness(6, 10, 6, 10)
+                });
+            }
+            else
+            {
+                foreach (string item in items)
+                {
+                    string captured = item;
+                    Border itemBorder = new Border
+                    {
+                        Background = BrushBgInput,
+                        BorderBrush = BrushBorderSubtle,
+                        BorderThickness = new Thickness(1),
+                        CornerRadius = new CornerRadius(6),
+                        Padding = new Thickness(10, 6, 10, 6),
+                        Margin = new Thickness(0, 0, 0, 4),
+                        Cursor = Cursors.Hand
+                    };
+
+                    TextBlock tb = new TextBlock
+                    {
+                        Text = captured,
+                        FontFamily = new FontFamily("Consolas"),
+                        FontSize = 12.5,
+                        Foreground = BrushTextPrimary,
+                        TextTrimming = TextTrimming.CharacterEllipsis
+                    };
+                    itemBorder.Child = tb;
+
+                    itemBorder.MouseEnter += (s, ev) =>
+                    {
+                        itemBorder.Background = BrushBgElevated;
+                        itemBorder.BorderBrush = BrushBorderFocus;
+                    };
+                    itemBorder.MouseLeave += (s, ev) =>
+                    {
+                        itemBorder.Background = BrushBgInput;
+                        itemBorder.BorderBrush = BrushBorderSubtle;
+                    };
+                    itemBorder.MouseLeftButtonUp += (s, ev) =>
+                    {
+                        popup.IsOpen = false;
+                        if (onSelect != null) onSelect(captured);
+                    };
+
+                    listStack.Children.Add(itemBorder);
+                }
+            }
+
+            sv.Content = listStack;
+            rootStack.Children.Add(sv);
+            outer.Child = rootStack;
+            popup.Child = outer;
+            popup.IsOpen = true;
+        }
+
         // ── Métodos Públicos de Verificação Automatizada (Phase3Verifier) ─────────
 
         public int GetCompilableListViewCount()
@@ -2495,12 +2863,23 @@ namespace DatasulCompileGen.UI
             return _cachedScriptPreviewText;
         }
 
+        public int GetPathFormatIndex()
+        {
+            return _pathFormatIndex;
+        }
+
+        public int GetScriptModeIndex()
+        {
+            return _scriptModeIndex;
+        }
+
         public void SetScriptModeIndex(int index)
         {
             _scriptModeIndex = index;
             ApplySegmentedOptionVisual(_btnModeErrorLog, index == 0);
             ApplySegmentedOptionVisual(_btnModePure, index == 1);
             RefreshScriptPreview();
+            SaveCurrentStateToCache();
         }
 
         public void SetPathFormatIndex(int index)
@@ -2509,6 +2888,7 @@ namespace DatasulCompileGen.UI
             ApplySegmentedOptionVisual(_btnPathRelative, index == 0);
             ApplySegmentedOptionVisual(_btnPathAbsolute, index == 1);
             RefreshScriptPreview();
+            SaveCurrentStateToCache();
         }
     }
 }

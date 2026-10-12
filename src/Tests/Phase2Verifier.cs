@@ -81,11 +81,16 @@ namespace DatasulCompileGen.Tests
                 Assert(pureAbsScript.Contains("COMPILE C:/Totvs/Fontes/esp/es0001.p SAVE."),
                     "Modo Puro Absoluto deveria conter COMPILE C:/Totvs/Fontes/esp/es0001.p SAVE.");
 
-                // 3. Testar Modo Com Log de Erros (WithErrorLog)
+                // 3. Testar Padrao de CompileScriptOptions (Caminho Absoluto marcado por padrao)
+                CompileScriptOptions defaultOpts = new CompileScriptOptions();
+                Assert(defaultOpts.PathFormat == CompilePathFormat.AbsolutePath,
+                    "CompileScriptOptions deve vir com PathFormat = AbsolutePath por padrao.");
+
+                // 4. Testar Modo Com Log de Erros no SESSION:TEMP-DIRECTORY
                 CompileScriptOptions errorLogOpts = new CompileScriptOptions
                 {
                     ScriptMode = CompileScriptMode.WithErrorLog,
-                    PathFormat = CompilePathFormat.RelativeToRoot,
+                    PathFormat = CompilePathFormat.AbsolutePath,
                     SearchTermUsed = "es-teste-123",
                     RootDirectory = @"C:\Totvs\Fontes",
                     TargetScriptFilePath = @"C:\Scripts\compilar-es-teste.p"
@@ -93,16 +98,51 @@ namespace DatasulCompileGen.Tests
 
                 string logScript = generator.GenerateScript(sampleResults, errorLogOpts);
                 Assert(logScript.Contains("DEFINE STREAM s-log."), "Deve definir stream s-log.");
-                Assert(logScript.Contains("C:/Scripts/compilar-es-teste.log"), "Deve configurar caminho do .log no mesmo diretorio do script .p.");
-                Assert(logScript.Contains("RUN pi-compilar (INPUT \"esp/es0001.p\")."), "Deve chamar pi-compilar para esp/es0001.p.");
-                Assert(logScript.Contains("RUN pi-compilar (INPUT \"esp/es0002.w\")."), "Deve chamar pi-compilar para esp/es0002.w.");
+                Assert(logScript.Contains("SESSION:TEMP-DIRECTORY"), "Deve configurar caminho do .log no SESSION:TEMP-DIRECTORY.");
+                Assert(logScript.Contains("compilar-es-teste.log"), "Deve usar o nome do arquivo .log em SESSION:TEMP-DIRECTORY.");
+                Assert(logScript.Contains("RUN pi-compilar (INPUT \"C:/Totvs/Fontes/esp/es0001.p\")."), "Deve chamar pi-compilar com caminho absoluto para esp/es0001.p.");
+                Assert(logScript.Contains("RUN pi-compilar (INPUT \"C:/Totvs/Fontes/esp/es0002.w\")."), "Deve chamar pi-compilar com caminho absoluto para esp/es0002.w.");
                 Assert(!logScript.Contains("es0003-desmarcado.p"), "Nao deve incluir programa desmarcado.");
                 Assert(logScript.Contains("COMPILE VALUE(p-cod-prog) SAVE NO-ERROR."), "Deve usar COMPILE VALUE(p-cod-prog) SAVE NO-ERROR.");
                 Assert(logScript.Contains("IF COMPILER:ERROR OR ERROR-STATUS:ERROR THEN DO:"), "Deve verificar COMPILER:ERROR para logar apenas erros.");
                 Assert(logScript.Contains("IF i-tot-erros > 0 THEN DO:"), "Deve exibir MESSAGE no final apenas se i-tot-erros > 0.");
 
+                // 5. Testar AppCacheService (Persistencia de configuracoes, diretorios e termos recentes)
+                string tempCacheFile = Path.Combine(Path.GetTempPath(), "DatasulCompileGen_CacheTest_" + Guid.NewGuid().ToString("N") + ".cfg");
+                try
+                {
+                    AppCacheService cacheSvc = new AppCacheService(tempCacheFile);
+                    AppCacheData initial = cacheSvc.Load();
+                    Assert(initial.PathFormatIndex == 1, "Cache inicial deve vir com PathFormatIndex = 1 (Caminho Absoluto) marcado.");
+
+                    initial.LastRootDirectory = @"D:\totvs\datasul\dts11\ERP\Espec";
+                    initial.LastSearchTerm = "es_politica_tipo_carga";
+                    initial.WholeWord = true;
+                    AppCacheService.AddRecentDirectory(initial, @"D:\totvs\datasul\dts11\ERP\Espec");
+                    AppCacheService.AddRecentSearchTerm(initial, "es_politica_tipo_carga");
+                    AppCacheService.AddRecentSearchTerm(initial, "es-teste-123");
+                    cacheSvc.Save(initial);
+
+                    AppCacheData reloaded = cacheSvc.Load();
+                    Assert(reloaded.LastRootDirectory == @"D:\totvs\datasul\dts11\ERP\Espec", "Deve restaurar LastRootDirectory do cache.");
+                    Assert(reloaded.LastSearchTerm == "es_politica_tipo_carga", "Deve restaurar LastSearchTerm do cache.");
+                    Assert(reloaded.WholeWord == true, "Deve restaurar WholeWord do cache.");
+                    Assert(reloaded.RecentDirectories.Count == 1 && reloaded.RecentDirectories[0] == @"D:\totvs\datasul\dts11\ERP\Espec",
+                        "Deve restaurar lista de RecentDirectories do cache.");
+                    Assert(reloaded.RecentSearchTerms.Count == 2 && reloaded.RecentSearchTerms[0] == "es-teste-123",
+                        "Deve restaurar lista de RecentSearchTerms na ordem mais recente.");
+                }
+                finally
+                {
+                    if (File.Exists(tempCacheFile))
+                    {
+                        try { File.Delete(tempCacheFile); } catch { }
+                    }
+                }
+
                 Console.WriteLine("  - Modo Puro (Relativo e Absoluto): OK");
-                Console.WriteLine("  - Modo Com Log de Erros (NO-ERROR, apenas erros no .log do mesmo diretorio e MESSAGE condicional): OK");
+                Console.WriteLine("  - Modo Com Log de Erros em SESSION:TEMP-DIRECTORY e Caminho Absoluto por padrao: OK");
+                Console.WriteLine("  - Persistencia em Cache (AppCacheService): OK");
                 Console.WriteLine("PHASE 2 VERIFICATION PASSED");
                 return 0;
             }
