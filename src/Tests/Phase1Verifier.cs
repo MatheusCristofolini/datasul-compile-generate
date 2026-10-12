@@ -48,12 +48,12 @@ namespace DatasulCompileGen.Tests
                 Assert(!report2.AllResults.Any(r => r.RelativePath == "esp/es-comentado.p"),
                     "Com IgnoreComments=true, esp/es-comentado.p NAO deveria aparecer nos resultados.");
 
-                // 2. Verificar match direto em esp/es0001.p
+                // 2. Verificar match direto em esp/es0001.p (linhas 4 e 5)
                 FileSearchResult es0001 = report2.CompilableResults.FirstOrDefault(r => r.RelativePath == "esp/es0001.p");
-                Assert(es0001 != null && es0001.IsDirectMatch && es0001.DirectMatches.Count == 1,
-                    "esp/es0001.p deveria ter 1 match direto.");
-                Assert(es0001.DirectMatches[0].LineNumber == 4,
-                    "Match em esp/es0001.p deveria estar na linha 4, mas foi " + es0001.DirectMatches[0].LineNumber);
+                Assert(es0001 != null && es0001.IsDirectMatch && es0001.DirectMatches.Count == 2,
+                    "esp/es0001.p deveria ter 2 matches diretos (linhas 4 e 5).");
+                Assert(es0001.DirectMatches[0].LineNumber == 4 && es0001.DirectMatches[1].LineNumber == 5,
+                    "Matches em esp/es0001.p deveriam estar nas linhas 4 e 5.");
 
                 // 3. Verificar rastreamento multinível (.i -> .i -> .w) em esp/es0002.w
                 FileSearchResult es0002 = report2.CompilableResults.FirstOrDefault(r => r.RelativePath == "esp/es0002.w");
