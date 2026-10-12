@@ -1,9 +1,12 @@
 $ErrorActionPreference = "Stop"
 
-$cscPath = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
-if (-not (Test-Path $cscPath)) {
-    $cscPath = "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe"
+$fwDir = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319"
+if (-not (Test-Path (Join-Path $fwDir "csc.exe"))) {
+    $fwDir = "C:\Windows\Microsoft.NET\Framework\v4.0.30319"
 }
+
+$cscPath = Join-Path $fwDir "csc.exe"
+$wpfDir = Join-Path $fwDir "WPF"
 
 if (-not (Test-Path $cscPath)) {
     throw "Compilador C# nativo do Windows (csc.exe) nao encontrado em C:\Windows\Microsoft.NET."
@@ -27,14 +30,18 @@ $sources = @(
     (Join-Path $rootDir "src\Program.cs")
 )
 
-Write-Host "Compilando executavel portatil DatasulCompileGen.exe..." -ForegroundColor Cyan
+Write-Host "Compilando executavel portatil WPF (UI/UX Pro Max) DatasulCompileGen.exe..." -ForegroundColor Cyan
 
 & $cscPath /nologo /target:winexe /optimize+ /platform:anycpu `
-    /out:$outRootExe `
+    "/out:$outRootExe" `
     /r:System.dll `
     /r:System.Core.dll `
+    /r:System.Xaml.dll `
     /r:System.Drawing.dll `
     /r:System.Windows.Forms.dll `
+    "/r:$wpfDir\PresentationFramework.dll" `
+    "/r:$wpfDir\PresentationCore.dll" `
+    "/r:$wpfDir\WindowsBase.dll" `
     $sources
 
 if ($LASTEXITCODE -ne 0) {

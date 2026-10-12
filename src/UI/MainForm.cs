@@ -1,32 +1,71 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Shapes;
 using DatasulCompileGen.Core;
+using WinForms = System.Windows.Forms;
 
 namespace DatasulCompileGen.UI
 {
-    public class MainForm : Form
+    public class MainForm : Window
     {
-        // Paleta VS Code Dark+
-        private static readonly Color BgDark = Color.FromArgb(30, 30, 30);
-        private static readonly Color BgSidebar = Color.FromArgb(37, 37, 38);
-        private static readonly Color BgHeader = Color.FromArgb(45, 45, 48);
-        private static readonly Color BgInput = Color.FromArgb(60, 60, 60);
-        private static readonly Color FgPrimary = Color.FromArgb(220, 220, 220);
-        private static readonly Color FgMuted = Color.FromArgb(160, 160, 160);
-        private static readonly Color AccentBlue = Color.FromArgb(0, 122, 204);
-        private static readonly Color AccentGreen = Color.FromArgb(46, 160, 67);
-        private static readonly Color HighlightLineBg = Color.FromArgb(38, 79, 120);
-        private static readonly Color HighlightTermBg = Color.FromArgb(90, 70, 0);
-        private static readonly Color HighlightTermFg = Color.FromArgb(255, 225, 100);
+        // Paleta de Cores UI/UX Pro Max (design-system/MASTER.md - Dark Slate OLED + Emerald/Blue)
+        private static readonly Color ColBgCanvas = Color.FromRgb(9, 13, 22);         // #090D16
+        private static readonly Color ColBgSurface = Color.FromRgb(17, 24, 39);       // #111827
+        private static readonly Color ColBgElevated = Color.FromRgb(30, 41, 59);      // #1E293B
+        private static readonly Color ColBgInput = Color.FromRgb(11, 17, 32);         // #0B1120
+        private static readonly Color ColBorderSubtle = Color.FromRgb(30, 41, 59);    // #1E293B
+        private static readonly Color ColBorderDefault = Color.FromRgb(51, 65, 85);   // #334155
+        private static readonly Color ColBorderFocus = Color.FromRgb(56, 189, 248);   // #38BDF8
+        private static readonly Color ColPrimaryBlue = Color.FromRgb(37, 99, 235);    // #2563EB
+        private static readonly Color ColPrimaryBlueHover = Color.FromRgb(59, 130, 246); // #3B82F6
+        private static readonly Color ColEmerald = Color.FromRgb(5, 150, 105);        // #059669
+        private static readonly Color ColEmeraldHover = Color.FromRgb(16, 185, 129);  // #10B981
+        private static readonly Color ColDanger = Color.FromRgb(220, 38, 38);         // #DC2626
+        private static readonly Color ColTextPrimary = Color.FromRgb(248, 250, 252);  // #F8FAFC
+        private static readonly Color ColTextSecondary = Color.FromRgb(148, 163, 184);// #94A3B8
+        private static readonly Color ColTextMuted = Color.FromRgb(100, 116, 139);    // #64748B
 
-        // Controles Superiores de Busca
+        private static readonly SolidColorBrush BrushBgCanvas = Freeze(new SolidColorBrush(ColBgCanvas));
+        private static readonly SolidColorBrush BrushBgSurface = Freeze(new SolidColorBrush(ColBgSurface));
+        private static readonly SolidColorBrush BrushBgElevated = Freeze(new SolidColorBrush(ColBgElevated));
+        private static readonly SolidColorBrush BrushBgInput = Freeze(new SolidColorBrush(ColBgInput));
+        private static readonly SolidColorBrush BrushBorderSubtle = Freeze(new SolidColorBrush(ColBorderSubtle));
+        private static readonly SolidColorBrush BrushBorderDefault = Freeze(new SolidColorBrush(ColBorderDefault));
+        private static readonly SolidColorBrush BrushBorderFocus = Freeze(new SolidColorBrush(ColBorderFocus));
+        private static readonly SolidColorBrush BrushPrimaryBlue = Freeze(new SolidColorBrush(ColPrimaryBlue));
+        private static readonly SolidColorBrush BrushPrimaryBlueHover = Freeze(new SolidColorBrush(ColPrimaryBlueHover));
+        private static readonly SolidColorBrush BrushEmerald = Freeze(new SolidColorBrush(ColEmerald));
+        private static readonly SolidColorBrush BrushEmeraldHover = Freeze(new SolidColorBrush(ColEmeraldHover));
+        private static readonly SolidColorBrush BrushDanger = Freeze(new SolidColorBrush(ColDanger));
+        private static readonly SolidColorBrush BrushTextPrimary = Freeze(new SolidColorBrush(ColTextPrimary));
+        private static readonly SolidColorBrush BrushTextSecondary = Freeze(new SolidColorBrush(ColTextSecondary));
+        private static readonly SolidColorBrush BrushTextMuted = Freeze(new SolidColorBrush(ColTextMuted));
+
+        // Ícones Vetoriais SVG (Lucide 24x24 Paths - Zero Emojis!)
+        private const string SvgFolder = "M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z";
+        private const string SvgSearch = "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.35-4.35";
+        private const string SvgDownload = "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3";
+        private const string SvgCopy = "M8 4v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.242a2 2 0 0 0-.602-1.43L16.083 2.57A2 2 0 0 0 14.685 2H10a2 2 0 0 0-2 2z M16 18v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2";
+        private const string SvgCheck = "M20 6L9 17l-5-5";
+        private const string SvgCode = "M16 18l6-6-6-6 M8 6l-6 6 6 6";
+        private const string SvgGitBranch = "M6 3v12 M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M18 9a9 9 0 0 1-9 9";
+        private const string SvgStop = "M18 6L6 18 M6 6l12 12";
+        private const string SvgExternal = "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6 M15 3h6v6 M10 14L21 3";
+        private const string SvgLayers = "M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5";
+
+        // Controles de Busca
         private TextBox _txtRootDir;
         private Button _btnBrowseDir;
         private TextBox _txtSearchTerm;
@@ -39,508 +78,1362 @@ namespace DatasulCompileGen.UI
         private Button _btnCancel;
         private Button _btnQuickExport;
 
-        // Painel Esquerdo (Resultados)
-        private TabControl _tabLeft;
-        private TabPage _tabCompilables;
-        private TabPage _tabTreeSearch;
-        private TextBox _txtFilterCompilables;
-        private Button _btnSelectAll;
-        private Button _btnUnselectAll;
-        private Label _lblSelectedSummary;
-        private ListView _lvCompilables;
-        private TreeView _tvOccurrences;
+        // KPI Cards
+        private TextBlock _lblKpiScanned;
+        private TextBlock _lblKpiScannedSub;
+        private TextBlock _lblKpiCompilables;
+        private TextBlock _lblKpiViaInclude;
+        private TextBlock _lblKpiSelected;
 
-        // Painel Direito (Preview de Código + Preview do Script .p)
-        private TabControl _tabRight;
-        private TabPage _tabCodePreview;
-        private TabPage _tabScriptPreview;
-        private Label _lblCodePreviewFile;
+        // Painel Esquerdo (Segmented Tabs + Listas)
+        private Button _btnTabCompilables;
+        private Button _btnTabOccurrences;
+        private Grid _viewCompilables;
+        private Grid _viewOccurrences;
+        private TextBox _txtFilterCompilables;
+        private StackPanel _spCompilableItems;
+        private StackPanel _spOccurrenceTree;
+        private int _compilableRenderedCount;
+        private int _treeFileNodesCount;
+
+        // Painel Direito (Segmented Tabs + Preview Código + Preview Script .p)
+        private Button _btnTabCodePreview;
+        private Button _btnTabScriptPreview;
+        private Grid _viewCodePreview;
+        private Grid _viewScriptPreview;
+        private TextBlock _lblCodePreviewFile;
+        private TextBlock _lblCodePreviewLineBadge;
         private Button _btnOpenFolder;
         private RichTextBox _rtbCodePreview;
 
-        // Controles de Geração do Script .p
-        private ComboBox _cmbScriptMode;
-        private ComboBox _cmbPathFormat;
-        private Button _btnSaveScript;
-        private Button _btnCopyScript;
+        // Opções Segmentadas do Script .p
+        private Button _btnModeErrorLog;
+        private Button _btnModePure;
+        private Button _btnPathRelative;
+        private Button _btnPathAbsolute;
+        private int _scriptModeIndex; // 0 = WithErrorLog, 1 = PureCompileSave
+        private int _pathFormatIndex; // 0 = RelativeToRoot, 1 = AbsolutePath
         private RichTextBox _rtbScriptPreview;
+        private string _cachedScriptPreviewText;
 
         // Barra de Status
-        private StatusStrip _statusStrip;
-        private ToolStripStatusLabel _lblStatus;
-        private ToolStripProgressBar _progressBar;
+        private Ellipse _statusDot;
+        private TextBlock _lblStatus;
+        private ProgressBar _progressBar;
 
-        // Estado Interno
+        // Serviços e Estado
         private readonly ProgressSearchEngine _searchEngine;
         private readonly CompileScriptGenerator _scriptGenerator;
         private CancellationTokenSource _cts;
         private SearchReport _currentReport;
-        private bool _suppressItemCheck;
         private string _currentPreviewFilePath;
-
-        private class TreeNodePayload
-        {
-            public FileSearchResult Result { get; set; }
-            public int LineNumber { get; set; }
-        }
+        private Border _selectedProgramCardBorder;
 
         public MainForm()
         {
             _searchEngine = new ProgressSearchEngine();
             _scriptGenerator = new CompileScriptGenerator();
             _currentPreviewFilePath = string.Empty;
+            _cachedScriptPreviewText = string.Empty;
+            _scriptModeIndex = 0;
+            _pathFormatIndex = 0;
 
-            InitializeComponent();
+            InitializeGlobalResources();
+            InitializeLayout();
         }
 
-        private void InitializeComponent()
+        private static SolidColorBrush Freeze(SolidColorBrush brush)
         {
-            Text = "Datasul Search & Compile Script Generator - Progress 4GL / ABL";
-            Size = new Size(1340, 820);
-            MinimumSize = new Size(1024, 640);
-            StartPosition = FormStartPosition.CenterScreen;
-            BackColor = BgDark;
-            ForeColor = FgPrimary;
-            Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            brush.Freeze();
+            return brush;
+        }
 
-            // 1. Painel Superior (Configuração de Busca)
-            Panel topPanel = new Panel
+        private void InitializeGlobalResources()
+        {
+            // Estilos globais em XAML para eliminar 100% das bordas e scrollbars brancas legadas do Windows
+            string xamlResources = @"
+<ResourceDictionary xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+                    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>
+    <Style TargetType='{x:Type ScrollBar}'>
+        <Setter Property='Background' Value='Transparent'/>
+        <Setter Property='Width' Value='8'/>
+        <Setter Property='Template'>
+            <Setter.Value>
+                <ControlTemplate TargetType='{x:Type ScrollBar}'>
+                    <Grid Background='#090D16' Width='8'>
+                        <Track x:Name='PART_Track' IsDirectionReversed='true'>
+                            <Track.Thumb>
+                                <Thumb>
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType='{x:Type Thumb}'>
+                                            <Border Background='#334155' CornerRadius='4' Margin='1'/>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property='Orientation' Value='Horizontal'>
+                            <Setter Property='Width' Value='Auto'/>
+                            <Setter Property='Height' Value='8'/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>";
+
+            ResourceDictionary dict = (ResourceDictionary)XamlReader.Parse(xamlResources);
+            Resources.MergedDictionaries.Add(dict);
+        }
+
+        private void InitializeLayout()
+        {
+            Title = "Datasul Search & Compile Script Generator — Progress 4GL / ABL";
+            Width = 1380;
+            Height = 860;
+            MinWidth = 1060;
+            MinHeight = 680;
+            WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            Background = BrushBgCanvas;
+            Foreground = BrushTextPrimary;
+            FontFamily = new FontFamily("Segoe UI");
+            FontSize = 13;
+
+            Grid rootGrid = new Grid { Margin = new Thickness(16, 14, 16, 10) };
+            rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 0: Header Titlebar
+            rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 1: Search Command Panel
+            rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 2: KPI Cards
+            rootGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // 3: Split Workspace
+            rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 4: Status Bar
+
+            // 0. Header Bar
+            UIElement headerBar = BuildHeaderBar();
+            Grid.SetRow(headerBar, 0);
+            rootGrid.Children.Add(headerBar);
+
+            // 1. Search Command Card
+            UIElement searchCard = BuildSearchCommandCard();
+            Grid.SetRow(searchCard, 1);
+            rootGrid.Children.Add(searchCard);
+
+            // 2. KPI Metrics Strip
+            UIElement kpiStrip = BuildKpiStrip();
+            Grid.SetRow(kpiStrip, 2);
+            rootGrid.Children.Add(kpiStrip);
+
+            // 3. Main Split Workspace
+            UIElement workspace = BuildMainWorkspace();
+            Grid.SetRow(workspace, 3);
+            rootGrid.Children.Add(workspace);
+
+            // 4. Status Bar
+            UIElement statusBar = BuildStatusBar();
+            Grid.SetRow(statusBar, 4);
+            rootGrid.Children.Add(statusBar);
+
+            Content = rootGrid;
+            RefreshScriptPreview();
+        }
+
+        private UIElement BuildHeaderBar()
+        {
+            Grid header = new Grid { Margin = new Thickness(0, 0, 0, 12) };
+            header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            StackPanel leftBrand = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+
+            Border iconBadge = new Border
             {
-                Dock = DockStyle.Top,
-                Height = 116,
-                BackColor = BgHeader,
-                Padding = new Padding(12, 10, 12, 10)
+                Width = 36,
+                Height = 36,
+                CornerRadius = new CornerRadius(9),
+                Background = new SolidColorBrush(Color.FromRgb(23, 37, 84)),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(59, 130, 246)),
+                BorderThickness = new Thickness(1),
+                Margin = new Thickness(0, 0, 12, 0),
+                Child = CreateSvgIcon(SvgLayers, Color.FromRgb(96, 165, 250), 18)
             };
 
-            Label lblDir = new Label
+            StackPanel titleStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            titleStack.Children.Add(new TextBlock
             {
-                Text = "Diretório de Programas:",
-                Location = new Point(12, 14),
-                AutoSize = true,
-                ForeColor = FgPrimary
-            };
-
-            _txtRootDir = new TextBox
+                Text = "Datasul Search & Compile Generator",
+                FontSize = 17,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = BrushTextPrimary
+            });
+            titleStack.Children.Add(new TextBlock
             {
-                Location = new Point(160, 11),
-                Width = 490,
-                BackColor = BgInput,
-                ForeColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-
-            _btnBrowseDir = CreateStyledButton("Procurar...", new Point(658, 9), new Size(95, 26), Color.FromArgb(62, 62, 66));
-            _btnBrowseDir.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            _btnBrowseDir.Click += OnBrowseDirectoryClick;
-
-            Label lblExt = new Label
-            {
-                Text = "Extensões:",
-                Location = new Point(768, 14),
-                AutoSize = true,
-                ForeColor = FgPrimary,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
-            };
-
-            _txtExtensions = new TextBox
-            {
-                Text = ".p, .w, .i, .cls",
-                Location = new Point(838, 11),
-                Width = 140,
-                BackColor = BgInput,
-                ForeColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
-            };
-
-            _btnQuickExport = CreateStyledButton("Salvar Script .p...", new Point(995, 9), new Size(315, 28), AccentGreen);
-            _btnQuickExport.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            _btnQuickExport.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            _btnQuickExport.Click += OnSaveScriptClick;
-
-            // Linha 2: Termo de Busca e Botões Buscar / Cancelar
-            Label lblSearch = new Label
-            {
-                Text = "Palavra / Tabela Busca:",
-                Location = new Point(12, 48),
-                AutoSize = true,
-                ForeColor = FgPrimary
-            };
-
-            _txtSearchTerm = new TextBox
-            {
-                Location = new Point(160, 45),
-                Width = 490,
-                BackColor = BgInput,
-                ForeColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle,
-                Font = new Font("Consolas", 10F, FontStyle.Regular),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            _txtSearchTerm.KeyDown += OnSearchTermKeyDown;
-
-            _btnSearch = CreateStyledButton("Buscar Programas", new Point(658, 43), new Size(150, 28), AccentBlue);
-            _btnSearch.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            _btnSearch.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            _btnSearch.Click += OnSearchClick;
-
-            _btnCancel = CreateStyledButton("Cancelar", new Point(816, 43), new Size(90, 28), Color.FromArgb(160, 50, 50));
-            _btnCancel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            _btnCancel.Enabled = false;
-            _btnCancel.Click += OnCancelSearchClick;
-
-            // Linha 3: Checkboxes de Opções Progress Datasul
-            _chkTrackIncludes = new CheckBox
-            {
-                Text = "Rastrear Includes (.i -> .p, .w, .cls)",
-                Location = new Point(160, 82),
-                AutoSize = true,
-                Checked = true,
-                ForeColor = Color.FromArgb(120, 210, 255)
-            };
-
-            _chkIgnoreComments = new CheckBox
-            {
-                Text = "Ignorar Comentários (/* ... */ e //)",
-                Location = new Point(410, 82),
-                AutoSize = true,
-                Checked = true,
-                ForeColor = FgPrimary
-            };
-
-            _chkWholeWord = new CheckBox
-            {
-                Text = "Palavra Inteira",
-                Location = new Point(655, 82),
-                AutoSize = true,
-                Checked = false,
-                ForeColor = FgPrimary
-            };
-
-            _chkCaseSensitive = new CheckBox
-            {
-                Text = "Diferenciar Maiúsculas/Minúsculas",
-                Location = new Point(780, 82),
-                AutoSize = true,
-                Checked = false,
-                ForeColor = FgPrimary
-            };
-
-            topPanel.Controls.AddRange(new Control[]
-            {
-                lblDir, _txtRootDir, _btnBrowseDir, lblExt, _txtExtensions, _btnQuickExport,
-                lblSearch, _txtSearchTerm, _btnSearch, _btnCancel,
-                _chkTrackIncludes, _chkIgnoreComments, _chkWholeWord, _chkCaseSensitive
+                Text = "Varredura de impacto de tabelas Progress 4GL/ABL, rastreamento reverso de includes (.i) e geração de script COMPILE SAVE.",
+                FontSize = 12,
+                Foreground = BrushTextSecondary
             });
 
-            // 2. Barra de Status Inferior (Estilo VS Code)
-            _statusStrip = new StatusStrip
+            leftBrand.Children.Add(iconBadge);
+            leftBrand.Children.Add(titleStack);
+            Grid.SetColumn(leftBrand, 0);
+            header.Children.Add(leftBrand);
+
+            _btnQuickExport = CreateActionButton(
+                "Exportar Script .p...",
+                SvgDownload,
+                BrushEmerald,
+                BrushEmeraldHover,
+                Color.FromRgb(16, 185, 129),
+                175,
+                36);
+            _btnQuickExport.Click += OnSaveScriptClick;
+            Grid.SetColumn(_btnQuickExport, 1);
+            header.Children.Add(_btnQuickExport);
+
+            return header;
+        }
+
+        private UIElement BuildSearchCommandCard()
+        {
+            Border card = new Border
             {
-                BackColor = AccentBlue,
-                ForeColor = Color.White,
-                SizingGrip = true
+                Background = BrushBgSurface,
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(12),
+                Padding = new Thickness(16, 14, 16, 14),
+                Margin = new Thickness(0, 0, 0, 12)
             };
 
-            _lblStatus = new ToolStripStatusLabel
+            Grid grid = new Grid();
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(12) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(12) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            // Linha 1: Diretório + Botão Procurar + Extensões
+            Grid row1 = new Grid();
+            row1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
+            row1.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
+            row1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(210) });
+
+            StackPanel dirGroup = new StackPanel();
+            dirGroup.Children.Add(CreateFieldLabel("DIRETÓRIO DE PROGRAMAS PROGRESS"));
+            _txtRootDir = CreateModernTextBox(SvgFolder, "Selecione ou cole o caminho da pasta de fontes (ex: C:\\Totvs\\Fontes)...", false);
+            dirGroup.Children.Add(_txtRootDir);
+            Grid.SetColumn(dirGroup, 0);
+            row1.Children.Add(dirGroup);
+
+            _btnBrowseDir = CreateActionButton(
+                "Procurar Pasta",
+                SvgFolder,
+                BrushBgElevated,
+                 new SolidColorBrush(Color.FromRgb(51, 65, 85)),
+                ColBorderDefault,
+                135,
+                36);
+            _btnBrowseDir.VerticalAlignment = VerticalAlignment.Bottom;
+            _btnBrowseDir.Click += OnBrowseDirectoryClick;
+            Grid.SetColumn(_btnBrowseDir, 2);
+            row1.Children.Add(_btnBrowseDir);
+
+            StackPanel extGroup = new StackPanel();
+            extGroup.Children.Add(CreateFieldLabel("EXTENSÕES VARRIDAS"));
+            _txtExtensions = CreateModernTextBox(SvgCode, ".p, .w, .i, .cls", true);
+            _txtExtensions.Text = ".p, .w, .i, .cls";
+            extGroup.Children.Add(_txtExtensions);
+            Grid.SetColumn(extGroup, 4);
+            row1.Children.Add(extGroup);
+
+            Grid.SetRow(row1, 0);
+            grid.Children.Add(row1);
+
+            // Linha 2: Palavra-chave / Tabela + Buscar + Cancelar
+            Grid row2 = new Grid();
+            row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
+            row2.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            row2.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            StackPanel searchGroup = new StackPanel();
+            searchGroup.Children.Add(CreateFieldLabel("TERMO OU TABELA BUSCADA (EX: es-teste-123)"));
+            _txtSearchTerm = CreateModernTextBox(SvgSearch, "Digite o nome da tabela, campo ou palavra-chave e pressione Enter...", true);
+            _txtSearchTerm.KeyDown += OnSearchTermKeyDown;
+            searchGroup.Children.Add(_txtSearchTerm);
+            Grid.SetColumn(searchGroup, 0);
+            row2.Children.Add(searchGroup);
+
+            _btnSearch = CreateActionButton(
+                "Buscar Programas",
+                SvgSearch,
+                BrushPrimaryBlue,
+                BrushPrimaryBlueHover,
+                Color.FromRgb(96, 165, 250),
+                168,
+                36);
+            _btnSearch.VerticalAlignment = VerticalAlignment.Bottom;
+            _btnSearch.Click += OnSearchClick;
+            Grid.SetColumn(_btnSearch, 2);
+            row2.Children.Add(_btnSearch);
+
+            _btnCancel = CreateActionButton(
+                "Cancelar",
+                SvgStop,
+                BrushDanger,
+                new SolidColorBrush(Color.FromRgb(239, 68, 68)),
+                Color.FromRgb(248, 113, 113),
+                110,
+                36);
+            _btnCancel.VerticalAlignment = VerticalAlignment.Bottom;
+            _btnCancel.IsEnabled = false;
+            _btnCancel.Opacity = 0.45;
+            _btnCancel.Click += OnCancelSearchClick;
+            Grid.SetColumn(_btnCancel, 4);
+            row2.Children.Add(_btnCancel);
+
+            Grid.SetRow(row2, 2);
+            grid.Children.Add(row2);
+
+            // Linha 3: Pills de Opções de Busca
+            WrapPanel optionsBar = new WrapPanel { Orientation = Orientation.Horizontal };
+            _chkTrackIncludes = CreateOptionPillCheckBox("Rastrear Includes Recursivamente (.i → .p, .w, .cls)", true, true);
+            _chkIgnoreComments = CreateOptionPillCheckBox("Ignorar Comentários Progress (/* ... */ e //)", true, false);
+            _chkWholeWord = CreateOptionPillCheckBox("Palavra Inteira", false, false);
+            _chkCaseSensitive = CreateOptionPillCheckBox("Diferenciar Maiúsculas/Minúsculas", false, false);
+
+            optionsBar.Children.Add(_chkTrackIncludes);
+            optionsBar.Children.Add(_chkIgnoreComments);
+            optionsBar.Children.Add(_chkWholeWord);
+            optionsBar.Children.Add(_chkCaseSensitive);
+
+            Grid.SetRow(optionsBar, 4);
+            grid.Children.Add(optionsBar);
+
+            card.Child = grid;
+            return card;
+        }
+
+        private UIElement BuildKpiStrip()
+        {
+            UniformGrid kpiGrid = new UniformGrid
             {
-                Text = "Pronto. Selecione o diretório de programas e informe o termo de busca (ex: es-teste-123).",
-                Spring = true,
-                TextAlign = ContentAlignment.MiddleLeft,
-                ForeColor = Color.White
+                Columns = 4,
+                Margin = new Thickness(0, 0, 0, 12)
             };
 
-            _progressBar = new ToolStripProgressBar
+            kpiGrid.Children.Add(CreateKpiCard(
+                "ARQUIVOS VARRIDOS",
+                SvgFolder,
+                Color.FromRgb(56, 189, 248),
+                out _lblKpiScanned,
+                out _lblKpiScannedSub,
+                "Aguardando varredura",
+                new Thickness(0, 0, 6, 0)));
+
+            TextBlock subComp;
+            kpiGrid.Children.Add(CreateKpiCard(
+                "COMPILÁVEIS (.P / .W / .CLS)",
+                SvgCode,
+                Color.FromRgb(52, 211, 153),
+                out _lblKpiCompilables,
+                out subComp,
+                "Programas que entram no COMPILE",
+                new Thickness(6, 0, 6, 0)));
+
+            TextBlock subInc;
+            kpiGrid.Children.Add(CreateKpiCard(
+                "IMPACTO VIA INCLUDE (.I)",
+                SvgGitBranch,
+                Color.FromRgb(129, 140, 248),
+                out _lblKpiViaInclude,
+                out subInc,
+                "Rastreados indiretamente por .i",
+                new Thickness(6, 0, 6, 0)));
+
+            TextBlock subSel;
+            kpiGrid.Children.Add(CreateKpiCard(
+                "SELECIONADOS P/ SCRIPT .P",
+                SvgCheck,
+                Color.FromRgb(251, 191, 36),
+                out _lblKpiSelected,
+                out subSel,
+                "Marcados para gerar o arquivo .p",
+                new Thickness(6, 0, 0, 0)));
+
+            return kpiGrid;
+        }
+
+        private Border CreateKpiCard(
+            string title,
+            string svgPath,
+            Color accentColor,
+            out TextBlock valueBlock,
+            out TextBlock subBlock,
+            string defaultSubtitle,
+            Thickness margin)
+        {
+            Border card = new Border
             {
-                Size = new Size(200, 16),
-                Visible = false
+                Background = BrushBgSurface,
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(14, 10, 14, 10),
+                Margin = margin
             };
 
-            _statusStrip.Items.Add(_lblStatus);
-            _statusStrip.Items.Add(_progressBar);
+            Grid g = new Grid();
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-            // 3. Container Principal Dividido (Esquerda: Resultados | Direita: Preview Código & Script .p)
-            SplitContainer splitMain = new SplitContainer
+            StackPanel sp = new StackPanel();
+            sp.Children.Add(new TextBlock
             {
-                Dock = DockStyle.Fill,
-                Orientation = Orientation.Vertical,
-                SplitterDistance = 590,
-                BackColor = BgHeader,
-                SplitterWidth = 5
+                Text = title,
+                FontSize = 10.5,
+                FontWeight = FontWeights.Bold,
+                Foreground = BrushTextSecondary
+            });
+
+            valueBlock = new TextBlock
+            {
+                Text = "0",
+                FontSize = 22,
+                FontWeight = FontWeights.Bold,
+                Foreground = new SolidColorBrush(accentColor),
+                Margin = new Thickness(0, 2, 0, 2)
             };
+            sp.Children.Add(valueBlock);
+
+            subBlock = new TextBlock
+            {
+                Text = defaultSubtitle,
+                FontSize = 11,
+                Foreground = BrushTextMuted
+            };
+            sp.Children.Add(subBlock);
+
+            Border iconBox = new Border
+            {
+                Width = 34,
+                Height = 34,
+                CornerRadius = new CornerRadius(8),
+                Background = new SolidColorBrush(Color.FromArgb(30, accentColor.R, accentColor.G, accentColor.B)),
+                VerticalAlignment = VerticalAlignment.Top,
+                Child = CreateSvgIcon(svgPath, accentColor, 16)
+            };
+
+            Grid.SetColumn(sp, 0);
+            Grid.SetColumn(iconBox, 1);
+            g.Children.Add(sp);
+            g.Children.Add(iconBox);
+
+            card.Child = g;
+            return card;
+        }
+
+        private UIElement BuildMainWorkspace()
+        {
+            Grid splitGrid = new Grid();
+            splitGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(540), MinWidth = 360 });
+            splitGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
+            splitGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = 420 });
 
             // Painel Esquerdo
-            _tabLeft = new TabControl
+            Border leftCard = BuildLeftResultsCard();
+            Grid.SetColumn(leftCard, 0);
+            splitGrid.Children.Add(leftCard);
+
+            // Splitter
+            GridSplitter splitter = new GridSplitter
             {
-                Dock = DockStyle.Fill,
-                Font = new Font("Segoe UI", 9F, FontStyle.Regular)
+                Width = 10,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Background = Brushes.Transparent,
+                Cursor = Cursors.SizeWE
+            };
+            Grid.SetColumn(splitter, 1);
+            splitGrid.Children.Add(splitter);
+
+            // Painel Direito
+            Border rightCard = BuildRightPreviewCard();
+            Grid.SetColumn(rightCard, 2);
+            splitGrid.Children.Add(rightCard);
+
+            return splitGrid;
+        }
+
+        private Border BuildLeftResultsCard()
+        {
+            Border card = new Border
+            {
+                Background = BrushBgSurface,
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(12),
+                Padding = new Thickness(12)
             };
 
-            _tabCompilables = new TabPage("Programas p/ Compilar (0)")
+            Grid grid = new Grid();
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Segmented Switcher
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(10) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+            // Segmented Pill Header
+            Border segTrack = new Border
             {
-                BackColor = BgSidebar,
-                ForeColor = FgPrimary,
-                Padding = new Padding(6)
+                Background = BrushBgInput,
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(3)
             };
 
-            Panel pnlCompActions = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 64,
-                BackColor = BgSidebar
-            };
+            UniformGrid segButtons = new UniformGrid { Columns = 2 };
+            _btnTabCompilables = CreateSegmentedTabButton("Programas p/ Compilar (0)", true);
+            _btnTabOccurrences = CreateSegmentedTabButton("Árvore VS Code (0)", false);
 
-            _btnSelectAll = CreateStyledButton("Marcar Todos", new Point(2, 4), new Size(105, 25), Color.FromArgb(55, 55, 60));
-            _btnSelectAll.Click += (s, e) => SetAllCompilableChecks(true);
+            _btnTabCompilables.Click += (s, e) => SwitchLeftTab(true);
+            _btnTabOccurrences.Click += (s, e) => SwitchLeftTab(false);
 
-            _btnUnselectAll = CreateStyledButton("Desmarcar Todos", new Point(113, 4), new Size(120, 25), Color.FromArgb(55, 55, 60));
-            _btnUnselectAll.Click += (s, e) => SetAllCompilableChecks(false);
+            segButtons.Children.Add(_btnTabCompilables);
+            segButtons.Children.Add(_btnTabOccurrences);
+            segTrack.Child = segButtons;
 
-            _lblSelectedSummary = new Label
-            {
-                Text = "0 selecionados para o script .p",
-                Location = new Point(245, 9),
-                AutoSize = true,
-                ForeColor = Color.FromArgb(120, 210, 255),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
-            };
+            Grid.SetRow(segTrack, 0);
+            grid.Children.Add(segTrack);
 
-            Label lblFilter = new Label
-            {
-                Text = "Filtrar lista:",
-                Location = new Point(4, 37),
-                AutoSize = true,
-                ForeColor = FgMuted
-            };
+            // View 1: Compiláveis
+            _viewCompilables = new Grid();
+            _viewCompilables.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            _viewCompilables.RowDefinitions.Add(new RowDefinition { Height = new GridLength(8) });
+            _viewCompilables.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-            _txtFilterCompilables = new TextBox
-            {
-                Location = new Point(78, 34),
-                Width = 480,
-                BackColor = BgInput,
-                ForeColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
+            Grid filterBar = new Grid();
+            filterBar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            filterBar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
+            filterBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            filterBar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(6) });
+            filterBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            _txtFilterCompilables = CreateModernTextBox(SvgSearch, "Filtrar programas na lista...", false);
             _txtFilterCompilables.TextChanged += (s, e) => PopulateCompilablesListView();
+            Grid.SetColumn(_txtFilterCompilables, 0);
+            filterBar.Children.Add(_txtFilterCompilables);
 
-            pnlCompActions.Controls.AddRange(new Control[]
-            {
-                _btnSelectAll, _btnUnselectAll, _lblSelectedSummary, lblFilter, _txtFilterCompilables
-            });
+            Button btnAll = CreateSmallSecondaryButton("Marcar Todos");
+            btnAll.Click += (s, e) => SetAllCompilableChecks(true);
+            Grid.SetColumn(btnAll, 2);
+            filterBar.Children.Add(btnAll);
 
-            _lvCompilables = new ListView
+            Button btnNone = CreateSmallSecondaryButton("Desmarcar");
+            btnNone.Click += (s, e) => SetAllCompilableChecks(false);
+            Grid.SetColumn(btnNone, 4);
+            filterBar.Children.Add(btnNone);
+
+            Grid.SetRow(filterBar, 0);
+            _viewCompilables.Children.Add(filterBar);
+
+            ScrollViewer svComp = new ScrollViewer
             {
-                Dock = DockStyle.Fill,
-                View = View.Details,
-                CheckBoxes = true,
-                FullRowSelect = true,
-                GridLines = false,
-                BackColor = BgSidebar,
-                ForeColor = FgPrimary,
-                BorderStyle = BorderStyle.FixedSingle,
-                Font = new Font("Consolas", 9.5F, FontStyle.Regular)
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
             };
-            _lvCompilables.Columns.Add("Programa (PROPATH)", 240);
-            _lvCompilables.Columns.Add("Origem", 115);
-            _lvCompilables.Columns.Add("Ocorr.", 60);
-            _lvCompilables.Columns.Add("Referência / Cadeia de Include", 260);
-            _lvCompilables.ItemChecked += OnCompilableItemChecked;
-            _lvCompilables.SelectedIndexChanged += OnCompilableSelectedIndexChanged;
+            _spCompilableItems = new StackPanel();
+            _spCompilableItems.Children.Add(BuildEmptyStateBlock(
+                "Nenhum programa listado ainda",
+                "Escolha o diretório acima, digite o nome da tabela ou palavra-chave (ex: es-teste-123) e clique em Buscar Programas."));
+            svComp.Content = _spCompilableItems;
 
-            _tabCompilables.Controls.Add(_lvCompilables);
-            _tabCompilables.Controls.Add(pnlCompActions);
+            Grid.SetRow(svComp, 2);
+            _viewCompilables.Children.Add(svComp);
 
-            _tabTreeSearch = new TabPage("Ocorrências Estilo VS Code (0)")
+            // View 2: Árvore de Ocorrências Estilo VS Code
+            _viewOccurrences = new Grid { Visibility = Visibility.Collapsed };
+            ScrollViewer svTree = new ScrollViewer
             {
-                BackColor = BgSidebar,
-                ForeColor = FgPrimary,
-                Padding = new Padding(6)
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
             };
+            _spOccurrenceTree = new StackPanel();
+            svTree.Content = _spOccurrenceTree;
+            _viewOccurrences.Children.Add(svTree);
 
-            _tvOccurrences = new TreeView
+            Grid.SetRow(_viewCompilables, 2);
+            Grid.SetRow(_viewOccurrences, 2);
+            grid.Children.Add(_viewCompilables);
+            grid.Children.Add(_viewOccurrences);
+
+            card.Child = grid;
+            return card;
+        }
+
+        private Border BuildRightPreviewCard()
+        {
+            Border card = new Border
             {
-                Dock = DockStyle.Fill,
-                BackColor = BgSidebar,
-                ForeColor = FgPrimary,
-                BorderStyle = BorderStyle.FixedSingle,
-                Font = new Font("Consolas", 9.5F, FontStyle.Regular),
-                HideSelection = false,
-                ShowLines = true
-            };
-            _tvOccurrences.AfterSelect += OnTreeOccurrenceAfterSelect;
-            _tabTreeSearch.Controls.Add(_tvOccurrences);
-
-            _tabLeft.TabPages.Add(_tabCompilables);
-            _tabLeft.TabPages.Add(_tabTreeSearch);
-            splitMain.Panel1.Controls.Add(_tabLeft);
-
-            // Painel Direito (Visualizador de Código & Script .p Gerado)
-            _tabRight = new TabControl
-            {
-                Dock = DockStyle.Fill,
-                Font = new Font("Segoe UI", 9F, FontStyle.Regular)
-            };
-
-            _tabCodePreview = new TabPage("Visualizador de Código-Fonte")
-            {
-                BackColor = BgDark,
-                ForeColor = FgPrimary,
-                Padding = new Padding(6)
+                Background = BrushBgSurface,
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(12),
+                Padding = new Thickness(12)
             };
 
-            Panel pnlCodeHeader = new Panel
+            Grid grid = new Grid();
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Segmented Switcher
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(10) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+            Border segTrack = new Border
             {
-                Dock = DockStyle.Top,
-                Height = 34,
-                BackColor = BgHeader
+                Background = BrushBgInput,
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(3)
             };
 
-            _lblCodePreviewFile = new Label
+            UniformGrid segButtons = new UniformGrid { Columns = 2 };
+            _btnTabCodePreview = CreateSegmentedTabButton("Visualizador de Código-Fonte", true);
+            _btnTabScriptPreview = CreateSegmentedTabButton("Script .p de Compilação (Preview Ao Vivo)", false);
+
+            _btnTabCodePreview.Click += (s, e) => SwitchRightTab(true);
+            _btnTabScriptPreview.Click += (s, e) => SwitchRightTab(false);
+
+            segButtons.Children.Add(_btnTabCodePreview);
+            segButtons.Children.Add(_btnTabScriptPreview);
+            segTrack.Child = segButtons;
+
+            Grid.SetRow(segTrack, 0);
+            grid.Children.Add(segTrack);
+
+            // View 1: Visualizador de Código
+            _viewCodePreview = new Grid();
+            _viewCodePreview.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            _viewCodePreview.RowDefinitions.Add(new RowDefinition { Height = new GridLength(8) });
+            _viewCodePreview.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+            Border codeHeader = new Border
             {
-                Text = "Selecione um programa ou ocorrência à esquerda para inspecionar o código-fonte.",
-                Location = new Point(8, 8),
-                AutoSize = true,
-                ForeColor = FgPrimary,
-                Font = new Font("Consolas", 9.5F, FontStyle.Bold)
+                Background = BrushBgInput,
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(12, 7, 12, 7)
             };
 
-            _btnOpenFolder = CreateStyledButton("Abrir na Pasta", new Point(560, 4), new Size(115, 25), Color.FromArgb(62, 62, 66));
-            _btnOpenFolder.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            _btnOpenFolder.Enabled = false;
+            Grid codeHeaderGrid = new Grid();
+            codeHeaderGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            codeHeaderGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            codeHeaderGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            codeHeaderGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            StackPanel fileLabelStack = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            fileLabelStack.Children.Add(CreateSvgIcon(SvgCode, Color.FromRgb(56, 189, 248), 15));
+            _lblCodePreviewFile = new TextBlock
+            {
+                Text = "Selecione um programa ou ocorrência à esquerda para inspecionar o código-fonte",
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 12.5,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = BrushTextPrimary,
+                Margin = new Thickness(8, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            fileLabelStack.Children.Add(_lblCodePreviewFile);
+            Grid.SetColumn(fileLabelStack, 0);
+            codeHeaderGrid.Children.Add(fileLabelStack);
+
+            Border lineBadge = new Border
+            {
+                Background = new SolidColorBrush(Color.FromRgb(30, 58, 138)),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(59, 130, 246)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(8, 3, 8, 3),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            _lblCodePreviewLineBadge = new TextBlock
+            {
+                Text = "Linha -",
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 11,
+                FontWeight = FontWeights.Bold,
+                Foreground = new SolidColorBrush(Color.FromRgb(147, 197, 253))
+            };
+            lineBadge.Child = _lblCodePreviewLineBadge;
+            Grid.SetColumn(lineBadge, 1);
+            codeHeaderGrid.Children.Add(lineBadge);
+
+            _btnOpenFolder = CreateSmallSecondaryButton("Abrir na Pasta");
+            _btnOpenFolder.IsEnabled = false;
             _btnOpenFolder.Click += OnOpenFolderClick;
+            Grid.SetColumn(_btnOpenFolder, 3);
+            codeHeaderGrid.Children.Add(_btnOpenFolder);
 
-            pnlCodeHeader.Controls.Add(_lblCodePreviewFile);
-            pnlCodeHeader.Controls.Add(_btnOpenFolder);
+            codeHeader.Child = codeHeaderGrid;
+            Grid.SetRow(codeHeader, 0);
+            _viewCodePreview.Children.Add(codeHeader);
+
+            Border codeBoxBorder = new Border
+            {
+                Background = BrushBgCanvas,
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(4)
+            };
 
             _rtbCodePreview = new RichTextBox
             {
-                Dock = DockStyle.Fill,
-                ReadOnly = true,
-                WordWrap = false,
-                BackColor = BgDark,
-                ForeColor = FgPrimary,
-                BorderStyle = BorderStyle.None,
-                Font = new Font("Consolas", 10F, FontStyle.Regular),
-                DetectUrls = false
+                IsReadOnly = true,
+                Background = Brushes.Transparent,
+                Foreground = BrushTextPrimary,
+                BorderThickness = new Thickness(0),
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 13,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Document = new FlowDocument { PageWidth = 2200 }
+            };
+            codeBoxBorder.Child = _rtbCodePreview;
+            Grid.SetRow(codeBoxBorder, 2);
+            _viewCodePreview.Children.Add(codeBoxBorder);
+
+            // View 2: Script .p de Compilação (Preview & Opções Segmentadas)
+            _viewScriptPreview = new Grid { Visibility = Visibility.Collapsed };
+            _viewScriptPreview.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            _viewScriptPreview.RowDefinitions.Add(new RowDefinition { Height = new GridLength(8) });
+            _viewScriptPreview.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+            Border scriptOptionsCard = new Border
+            {
+                Background = BrushBgInput,
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(12, 10, 12, 10)
             };
 
-            _tabCodePreview.Controls.Add(_rtbCodePreview);
-            _tabCodePreview.Controls.Add(pnlCodeHeader);
+            Grid scriptOptGrid = new Grid();
+            scriptOptGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            scriptOptGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(8) });
+            scriptOptGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            scriptOptGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            scriptOptGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
+            scriptOptGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            scriptOptGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
+            scriptOptGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-            _tabScriptPreview = new TabPage("Script .p de Compilação (Preview)")
+            // Seletor 1: Modo do Script .p
+            TextBlock lblModeTitle = new TextBlock
             {
-                BackColor = BgDark,
-                ForeColor = FgPrimary,
-                Padding = new Padding(6)
+                Text = "MODO DO SCRIPT .P:",
+                FontSize = 11,
+                FontWeight = FontWeights.Bold,
+                Foreground = BrushTextSecondary,
+                VerticalAlignment = VerticalAlignment.Center
             };
+            Grid.SetRow(lblModeTitle, 0);
+            Grid.SetColumn(lblModeTitle, 0);
+            scriptOptGrid.Children.Add(lblModeTitle);
 
-            Panel pnlScriptOptions = new Panel
+            UniformGrid modePills = new UniformGrid { Columns = 2 };
+            _btnModeErrorLog = CreateSegmentedOptionButton("Com Log de Erros (NO-ERROR + .log)", true);
+            _btnModePure = CreateSegmentedOptionButton("Modo Puro (Apenas COMPILE SAVE.)", false);
+            _btnModeErrorLog.Click += (s, e) => SetScriptModeIndex(0);
+            _btnModePure.Click += (s, e) => SetScriptModeIndex(1);
+            modePills.Children.Add(_btnModeErrorLog);
+            modePills.Children.Add(_btnModePure);
+            Grid.SetRow(modePills, 0);
+            Grid.SetColumn(modePills, 2);
+            scriptOptGrid.Children.Add(modePills);
+
+            Button btnCopy = CreateActionButton(
+                "Copiar Código .p",
+                SvgCopy,
+                BrushPrimaryBlue,
+                BrushPrimaryBlueHover,
+                Color.FromRgb(96, 165, 250),
+                155,
+                32);
+            btnCopy.Click += OnCopyScriptClick;
+            Grid.SetRow(btnCopy, 0);
+            Grid.SetColumn(btnCopy, 4);
+            scriptOptGrid.Children.Add(btnCopy);
+
+            // Seletor 2: Formato do Caminho
+            TextBlock lblPathTitle = new TextBlock
             {
-                Dock = DockStyle.Top,
-                Height = 72,
-                BackColor = BgHeader,
-                Padding = new Padding(8)
+                Text = "FORMATO CAMINHO:",
+                FontSize = 11,
+                FontWeight = FontWeights.Bold,
+                Foreground = BrushTextSecondary,
+                VerticalAlignment = VerticalAlignment.Center
             };
+            Grid.SetRow(lblPathTitle, 2);
+            Grid.SetColumn(lblPathTitle, 0);
+            scriptOptGrid.Children.Add(lblPathTitle);
 
-            Label lblMode = new Label
+            UniformGrid pathPills = new UniformGrid { Columns = 2 };
+            _btnPathRelative = CreateSegmentedOptionButton("Caminho Relativo (Padrão PROPATH)", true);
+            _btnPathAbsolute = CreateSegmentedOptionButton("Caminho Absoluto Completo", false);
+            _btnPathRelative.Click += (s, e) => SetPathFormatIndex(0);
+            _btnPathAbsolute.Click += (s, e) => SetPathFormatIndex(1);
+            pathPills.Children.Add(_btnPathRelative);
+            pathPills.Children.Add(_btnPathAbsolute);
+            Grid.SetRow(pathPills, 2);
+            Grid.SetColumn(pathPills, 2);
+            scriptOptGrid.Children.Add(pathPills);
+
+            Button btnSaveP = CreateActionButton(
+                "Salvar Arquivo .p...",
+                SvgDownload,
+                BrushEmerald,
+                BrushEmeraldHover,
+                Color.FromRgb(16, 185, 129),
+                155,
+                32);
+            btnSaveP.Click += OnSaveScriptClick;
+            Grid.SetRow(btnSaveP, 2);
+            Grid.SetColumn(btnSaveP, 4);
+            scriptOptGrid.Children.Add(btnSaveP);
+
+            scriptOptionsCard.Child = scriptOptGrid;
+            Grid.SetRow(scriptOptionsCard, 0);
+            _viewScriptPreview.Children.Add(scriptOptionsCard);
+
+            Border scriptBoxBorder = new Border
             {
-                Text = "Formato do Script .p:",
-                Location = new Point(8, 10),
-                AutoSize = true,
-                ForeColor = FgPrimary
+                Background = BrushBgCanvas,
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(6)
             };
-
-            _cmbScriptMode = new ComboBox
-            {
-                Location = new Point(135, 7),
-                Width = 365,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = BgInput,
-                ForeColor = Color.White
-            };
-            _cmbScriptMode.Items.Add("Com Log de Erros (NO-ERROR + .log na pasta do script)");
-            _cmbScriptMode.Items.Add("Modo Puro (Apenas 'COMPILE <programa> SAVE.')");
-            _cmbScriptMode.SelectedIndex = 0;
-            _cmbScriptMode.SelectedIndexChanged += (s, e) => RefreshScriptPreview();
-
-            Label lblPathFmt = new Label
-            {
-                Text = "Caminho no COMPILE:",
-                Location = new Point(8, 41),
-                AutoSize = true,
-                ForeColor = FgPrimary
-            };
-
-            _cmbPathFormat = new ComboBox
-            {
-                Location = new Point(135, 38),
-                Width = 365,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = BgInput,
-                ForeColor = Color.White
-            };
-            _cmbPathFormat.Items.Add("Caminho Relativo à Raiz (Padrão PROPATH: esp/prog.p)");
-            _cmbPathFormat.Items.Add("Caminho Absoluto Completo (C:/.../esp/prog.p)");
-            _cmbPathFormat.SelectedIndex = 0;
-            _cmbPathFormat.SelectedIndexChanged += (s, e) => RefreshScriptPreview();
-
-            _btnSaveScript = CreateStyledButton("Salvar Arquivo .p...", new Point(512, 7), new Size(165, 28), AccentGreen);
-            _btnSaveScript.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            _btnSaveScript.Click += OnSaveScriptClick;
-
-            _btnCopyScript = CreateStyledButton("Copiar Código .p", new Point(512, 38), new Size(165, 27), AccentBlue);
-            _btnCopyScript.Click += OnCopyScriptClick;
-
-            pnlScriptOptions.Controls.AddRange(new Control[]
-            {
-                lblMode, _cmbScriptMode, lblPathFmt, _cmbPathFormat, _btnSaveScript, _btnCopyScript
-            });
 
             _rtbScriptPreview = new RichTextBox
             {
-                Dock = DockStyle.Fill,
-                ReadOnly = true,
-                WordWrap = false,
-                BackColor = BgDark,
-                ForeColor = Color.FromArgb(180, 230, 180),
-                BorderStyle = BorderStyle.None,
-                Font = new Font("Consolas", 10F, FontStyle.Regular),
-                DetectUrls = false
+                IsReadOnly = true,
+                Background = Brushes.Transparent,
+                Foreground = new SolidColorBrush(Color.FromRgb(167, 243, 208)),
+                BorderThickness = new Thickness(0),
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 13,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Document = new FlowDocument { PageWidth = 2200 }
             };
+            scriptBoxBorder.Child = _rtbScriptPreview;
+            Grid.SetRow(scriptBoxBorder, 2);
+            _viewScriptPreview.Children.Add(scriptBoxBorder);
 
-            _tabScriptPreview.Controls.Add(_rtbScriptPreview);
-            _tabScriptPreview.Controls.Add(pnlScriptOptions);
+            Grid.SetRow(_viewCodePreview, 2);
+            Grid.SetRow(_viewScriptPreview, 2);
+            grid.Children.Add(_viewCodePreview);
+            grid.Children.Add(_viewScriptPreview);
 
-            _tabRight.TabPages.Add(_tabCodePreview);
-            _tabRight.TabPages.Add(_tabScriptPreview);
-            splitMain.Panel2.Controls.Add(_tabRight);
-
-            Controls.Add(splitMain);
-            Controls.Add(topPanel);
-            Controls.Add(_statusStrip);
+            card.Child = grid;
+            return card;
         }
 
-        private static Button CreateStyledButton(string text, Point location, Size size, Color backColor)
+        private UIElement BuildStatusBar()
         {
-            Button btn = new Button
+            Border bar = new Border
+            {
+                Background = BrushBgSurface,
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(12, 7, 12, 7),
+                Margin = new Thickness(0, 10, 0, 0)
+            };
+
+            Grid g = new Grid();
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            _statusDot = new Ellipse
+            {
+                Width = 8,
+                Height = 8,
+                Fill = BrushEmeraldHover,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 8, 0)
+            };
+            Grid.SetColumn(_statusDot, 0);
+            g.Children.Add(_statusDot);
+
+            _lblStatus = new TextBlock
+            {
+                Text = "Pronto. Selecione o diretório de programas e informe o termo de busca (ex: es-teste-123).",
+                FontSize = 12,
+                Foreground = BrushTextSecondary,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(_lblStatus, 1);
+            g.Children.Add(_lblStatus);
+
+            _progressBar = new ProgressBar
+            {
+                Width = 180,
+                Height = 8,
+                Visibility = Visibility.Collapsed,
+                Margin = new Thickness(12, 0, 12, 0),
+                Background = BrushBgInput,
+                Foreground = BrushPrimaryBlueHover,
+                BorderThickness = new Thickness(0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(_progressBar, 2);
+            g.Children.Add(_progressBar);
+
+            TextBlock versionBadge = new TextBlock
+            {
+                Text = "UI/UX Pro Max • Portátil (.exe)",
+                FontSize = 11,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = BrushTextMuted,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(versionBadge, 3);
+            g.Children.Add(versionBadge);
+
+            bar.Child = g;
+            return bar;
+        }
+
+        // ── Construtores de Controles Estilizados (UI/UX Pro Max) ──────────────────
+
+        private static TextBlock CreateFieldLabel(string text)
+        {
+            return new TextBlock
             {
                 Text = text,
-                Location = location,
-                Size = size,
-                BackColor = backColor,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
+                FontSize = 10.5,
+                FontWeight = FontWeights.Bold,
+                Foreground = BrushTextSecondary,
+                Margin = new Thickness(2, 0, 0, 5)
+            };
+        }
+
+        private static TextBox CreateModernTextBox(string svgIconPath, string placeholderText, bool monospace)
+        {
+            TextBox tb = new TextBox
+            {
+                Height = 36,
+                Background = BrushBgInput,
+                Foreground = BrushTextPrimary,
+                CaretBrush = BrushBorderFocus,
+                BorderBrush = BrushBorderDefault,
+                BorderThickness = new Thickness(1),
+                FontFamily = monospace ? new FontFamily("Consolas") : new FontFamily("Segoe UI"),
+                FontSize = monospace ? 13.5 : 13,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Padding = new Thickness(10, 0, 10, 0),
+                Tag = placeholderText ?? string.Empty,
+                ToolTip = placeholderText
+            };
+
+            string safePath = string.IsNullOrEmpty(svgIconPath) ? SvgSearch : svgIconPath;
+
+            string templateXaml = string.Format(@"
+<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+                 xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
+                 TargetType='{{x:Type TextBox}}'>
+    <Border x:Name='Bd'
+            Background='{{TemplateBinding Background}}'
+            BorderBrush='{{TemplateBinding BorderBrush}}'
+            BorderThickness='{{TemplateBinding BorderThickness}}'
+            CornerRadius='8'>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width='34'/>
+                <ColumnDefinition Width='*'/>
+            </Grid.ColumnDefinitions>
+            <Path Grid.Column='0'
+                  Data='{0}'
+                  Stroke='#64748B'
+                  StrokeThickness='1.8'
+                  Stretch='Uniform'
+                  Width='14' Height='14'
+                  HorizontalAlignment='Center'
+                  VerticalAlignment='Center'
+                  Margin='4,0,0,0'/>
+            <ScrollViewer Grid.Column='1'
+                          x:Name='PART_ContentHost'
+                          Margin='2,0,10,0'
+                          VerticalAlignment='Center'/>
+            <TextBlock Grid.Column='1'
+                       x:Name='Watermark'
+                       Text='{{TemplateBinding Tag}}'
+                       Foreground='#64748B'
+                       FontSize='12.5'
+                       VerticalAlignment='Center'
+                       Margin='4,0,10,0'
+                       IsHitTestVisible='False'
+                       Visibility='Collapsed'/>
+        </Grid>
+    </Border>
+    <ControlTemplate.Triggers>
+        <Trigger Property='Text' Value=''>
+            <Setter TargetName='Watermark' Property='Visibility' Value='Visible'/>
+        </Trigger>
+        <Trigger Property='IsKeyboardFocused' Value='True'>
+            <Setter TargetName='Bd' Property='BorderBrush' Value='#38BDF8'/>
+            <Setter TargetName='Bd' Property='Background' Value='#0F172A'/>
+        </Trigger>
+        <Trigger Property='IsMouseOver' Value='True'>
+            <Setter TargetName='Bd' Property='BorderBrush' Value='#475569'/>
+        </Trigger>
+    </ControlTemplate.Triggers>
+</ControlTemplate>", safePath);
+
+            tb.Template = (ControlTemplate)XamlReader.Parse(templateXaml);
+            return tb;
+        }
+
+        private static CheckBox CreateRowCheckBox(bool isChecked)
+        {
+            CheckBox cb = new CheckBox
+            {
+                IsChecked = isChecked,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 10, 0),
                 Cursor = Cursors.Hand
             };
-            btn.FlatAppearance.BorderColor = Color.FromArgb(80, 80, 85);
-            btn.FlatAppearance.BorderSize = 1;
+
+            string templateXaml = @"
+<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+                 xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
+                 TargetType='{x:Type CheckBox}'>
+    <Border x:Name='Box'
+            Width='18' Height='18'
+            CornerRadius='5'
+            Background='#090D16'
+            BorderBrush='#475569'
+            BorderThickness='1.5'>
+        <Path x:Name='CheckMark'
+              Data='M4 9.5L7.5 13L14 5.5'
+              Stroke='White'
+              StrokeThickness='2'
+              StrokeStartLineCap='Round'
+              StrokeEndLineCap='Round'
+              StrokeLineJoin='Round'
+              Visibility='Collapsed'/>
+    </Border>
+    <ControlTemplate.Triggers>
+        <Trigger Property='IsChecked' Value='True'>
+            <Setter TargetName='Box' Property='Background' Value='#2563EB'/>
+            <Setter TargetName='Box' Property='BorderBrush' Value='#60A5FA'/>
+            <Setter TargetName='CheckMark' Property='Visibility' Value='Visible'/>
+        </Trigger>
+        <Trigger Property='IsMouseOver' Value='True'>
+            <Setter TargetName='Box' Property='BorderBrush' Value='#38BDF8'/>
+        </Trigger>
+    </ControlTemplate.Triggers>
+</ControlTemplate>";
+
+            cb.Template = (ControlTemplate)XamlReader.Parse(templateXaml);
+            return cb;
+        }
+
+        private static Button CreateActionButton(
+            string text,
+            string svgPath,
+            SolidColorBrush normalBg,
+            SolidColorBrush hoverBg,
+            Color borderColor,
+            double width,
+            double height)
+        {
+            StackPanel content = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            if (!string.IsNullOrEmpty(svgPath))
+            {
+                UIElement icon = CreateSvgIcon(svgPath, Colors.White, 15);
+                content.Children.Add(icon);
+            }
+
+            content.Children.Add(new TextBlock
+            {
+                Text = text,
+                FontSize = 12.5,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = Brushes.White,
+                Margin = new Thickness(string.IsNullOrEmpty(svgPath) ? 0 : 8, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            });
+
+            Button btn = new Button
+            {
+                Width = width,
+                Height = height,
+                Background = normalBg,
+                BorderBrush = new SolidColorBrush(borderColor),
+                BorderThickness = new Thickness(1),
+                Cursor = Cursors.Hand,
+                Content = content
+            };
+
+            btn.Template = CreateRoundedButtonTemplate(8);
+            btn.MouseEnter += (s, e) => { if (btn.IsEnabled) btn.Background = hoverBg; };
+            btn.MouseLeave += (s, e) => { if (btn.IsEnabled) btn.Background = normalBg; };
             return btn;
         }
 
-        private void OnBrowseDirectoryClick(object sender, EventArgs e)
+        private static Button CreateSmallSecondaryButton(string text)
         {
-            using (FolderBrowserDialog dlg = new FolderBrowserDialog())
+            Button btn = new Button
+            {
+                Content = text,
+                Height = 32,
+                Padding = new Thickness(12, 0, 12, 0),
+                Background = BrushBgElevated,
+                Foreground = BrushTextPrimary,
+                BorderBrush = BrushBorderDefault,
+                BorderThickness = new Thickness(1),
+                FontSize = 12,
+                FontWeight = FontWeights.SemiBold,
+                Cursor = Cursors.Hand
+            };
+            btn.Template = CreateRoundedButtonTemplate(7);
+            btn.MouseEnter += (s, e) => { if (btn.IsEnabled) btn.Background = new SolidColorBrush(Color.FromRgb(51, 65, 85)); };
+            btn.MouseLeave += (s, e) => { if (btn.IsEnabled) btn.Background = BrushBgElevated; };
+            return btn;
+        }
+
+        private static Button CreateSegmentedTabButton(string text, bool active)
+        {
+            Button btn = new Button
+            {
+                Content = text,
+                Height = 32,
+                FontSize = 12.5,
+                FontWeight = FontWeights.SemiBold,
+                Cursor = Cursors.Hand,
+                BorderThickness = new Thickness(0)
+            };
+            btn.Template = CreateRoundedButtonTemplate(6);
+            ApplySegmentedTabVisual(btn, active);
+            return btn;
+        }
+
+        private static void ApplySegmentedTabVisual(Button btn, bool active)
+        {
+            if (active)
+            {
+                btn.Background = BrushPrimaryBlue;
+                btn.Foreground = Brushes.White;
+            }
+            else
+            {
+                btn.Background = Brushes.Transparent;
+                btn.Foreground = BrushTextSecondary;
+            }
+        }
+
+        private static Button CreateSegmentedOptionButton(string text, bool active)
+        {
+            Button btn = new Button
+            {
+                Content = text,
+                Height = 30,
+                Margin = new Thickness(0, 0, 4, 0),
+                FontSize = 11.5,
+                FontWeight = FontWeights.SemiBold,
+                Cursor = Cursors.Hand,
+                BorderThickness = new Thickness(1)
+            };
+            btn.Template = CreateRoundedButtonTemplate(6);
+            ApplySegmentedOptionVisual(btn, active);
+            return btn;
+        }
+
+        private static void ApplySegmentedOptionVisual(Button btn, bool active)
+        {
+            if (active)
+            {
+                btn.Background = new SolidColorBrush(Color.FromRgb(30, 58, 138));
+                btn.BorderBrush = new SolidColorBrush(Color.FromRgb(59, 130, 246));
+                btn.Foreground = new SolidColorBrush(Color.FromRgb(224, 242, 254));
+            }
+            else
+            {
+                btn.Background = BrushBgSurface;
+                btn.BorderBrush = BrushBorderDefault;
+                btn.Foreground = BrushTextSecondary;
+            }
+        }
+
+        private static ControlTemplate CreateRoundedButtonTemplate(int radius)
+        {
+            string xaml = string.Format(@"
+<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+                 xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
+                 TargetType='{{x:Type Button}}'>
+    <Border Background='{{TemplateBinding Background}}'
+            BorderBrush='{{TemplateBinding BorderBrush}}'
+            BorderThickness='{{TemplateBinding BorderThickness}}'
+            CornerRadius='{0}'
+            Padding='{{TemplateBinding Padding}}'>
+        <ContentPresenter HorizontalAlignment='Center' VerticalAlignment='Center'/>
+    </Border>
+</ControlTemplate>", radius);
+
+            return (ControlTemplate)XamlReader.Parse(xaml);
+        }
+
+        private static CheckBox CreateOptionPillCheckBox(string text, bool isChecked, bool highlightAccent)
+        {
+            CheckBox cb = new CheckBox
+            {
+                Content = text,
+                IsChecked = isChecked,
+                Foreground = highlightAccent ? new SolidColorBrush(Color.FromRgb(125, 211, 252)) : BrushTextPrimary,
+                FontSize = 12,
+                FontWeight = highlightAccent ? FontWeights.SemiBold : FontWeights.Normal,
+                Margin = new Thickness(0, 0, 18, 0),
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Cursor = Cursors.Hand
+            };
+
+            string templateXaml = @"
+<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+                 xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
+                 TargetType='{x:Type CheckBox}'>
+    <Border x:Name='Pill'
+            Background='#0B1120'
+            BorderBrush='#334155'
+            BorderThickness='1'
+            CornerRadius='7'
+            Padding='10,5,12,5'>
+        <StackPanel Orientation='Horizontal' VerticalAlignment='Center'>
+            <Border x:Name='Box'
+                    Width='16' Height='16'
+                    CornerRadius='4'
+                    Background='#111827'
+                    BorderBrush='#475569'
+                    BorderThickness='1'
+                    Margin='0,0,8,0'>
+                <Path x:Name='CheckMark'
+                      Data='M3.5 8.5L6.5 11.5L12.5 4.5'
+                      Stroke='White'
+                      StrokeThickness='2'
+                      Visibility='Collapsed'/>
+            </Border>
+            <ContentPresenter VerticalAlignment='Center'/>
+        </StackPanel>
+    </Border>
+    <ControlTemplate.Triggers>
+        <Trigger Property='IsChecked' Value='True'>
+            <Setter TargetName='Box' Property='Background' Value='#2563EB'/>
+            <Setter TargetName='Box' Property='BorderBrush' Value='#60A5FA'/>
+            <Setter TargetName='CheckMark' Property='Visibility' Value='Visible'/>
+            <Setter TargetName='Pill' Property='BorderBrush' Value='#1E3A8A'/>
+            <Setter TargetName='Pill' Property='Background' Value='#0F172A'/>
+        </Trigger>
+        <Trigger Property='IsMouseOver' Value='True'>
+            <Setter TargetName='Pill' Property='BorderBrush' Value='#38BDF8'/>
+        </Trigger>
+    </ControlTemplate.Triggers>
+</ControlTemplate>";
+
+            cb.Template = (ControlTemplate)XamlReader.Parse(templateXaml);
+            return cb;
+        }
+
+        private static UIElement CreateSvgIcon(string pathData, Color strokeColor, double size)
+        {
+            System.Windows.Shapes.Path path = new System.Windows.Shapes.Path
+            {
+                Data = Geometry.Parse(pathData),
+                Stroke = new SolidColorBrush(strokeColor),
+                StrokeThickness = 2,
+                StrokeStartLineCap = PenLineCap.Round,
+                StrokeEndLineCap = PenLineCap.Round,
+                StrokeLineJoin = PenLineJoin.Round,
+                Stretch = Stretch.Uniform,
+                Width = size,
+                Height = size,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            return path;
+        }
+
+        private static UIElement BuildEmptyStateBlock(string title, string subtitle)
+        {
+            Border box = new Border
+            {
+                Background = BrushBgInput,
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(24),
+                Margin = new Thickness(4, 16, 4, 4)
+            };
+
+            StackPanel sp = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
+            sp.Children.Add(CreateSvgIcon(SvgSearch, ColTextMuted, 28));
+            sp.Children.Add(new TextBlock
+            {
+                Text = title,
+                FontSize = 14,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = BrushTextPrimary,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 10, 0, 4)
+            });
+            sp.Children.Add(new TextBlock
+            {
+                Text = subtitle,
+                FontSize = 12,
+                Foreground = BrushTextSecondary,
+                TextWrapping = TextWrapping.Wrap,
+                TextAlignment = TextAlignment.Center,
+                MaxWidth = 380
+            });
+
+            box.Child = sp;
+            return box;
+        }
+
+        // ── Navegação de Abas Segmentadas ──────────────────────────────────────────
+
+        private void SwitchLeftTab(bool showCompilables)
+        {
+            ApplySegmentedTabVisual(_btnTabCompilables, showCompilables);
+            ApplySegmentedTabVisual(_btnTabOccurrences, !showCompilables);
+            _viewCompilables.Visibility = showCompilables ? Visibility.Visible : Visibility.Collapsed;
+            _viewOccurrences.Visibility = showCompilables ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private void SwitchRightTab(bool showCodePreview)
+        {
+            ApplySegmentedTabVisual(_btnTabCodePreview, showCodePreview);
+            ApplySegmentedTabVisual(_btnTabScriptPreview, !showCodePreview);
+            _viewCodePreview.Visibility = showCodePreview ? Visibility.Visible : Visibility.Collapsed;
+            _viewScriptPreview.Visibility = showCodePreview ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        // ── Eventos de Busca e Ações ───────────────────────────────────────────────
+
+        private void OnBrowseDirectoryClick(object sender, RoutedEventArgs e)
+        {
+            using (WinForms.FolderBrowserDialog dlg = new WinForms.FolderBrowserDialog())
             {
                 dlg.Description = "Selecione o diretório raiz dos programas Progress Datasul:";
                 if (!string.IsNullOrWhiteSpace(_txtRootDir.Text) && Directory.Exists(_txtRootDir.Text))
@@ -548,7 +1441,7 @@ namespace DatasulCompileGen.UI
                     dlg.SelectedPath = _txtRootDir.Text;
                 }
 
-                if (dlg.ShowDialog(this) == DialogResult.OK)
+                if (dlg.ShowDialog() == WinForms.DialogResult.OK)
                 {
                     _txtRootDir.Text = dlg.SelectedPath;
                 }
@@ -557,14 +1450,14 @@ namespace DatasulCompileGen.UI
 
         private void OnSearchTermKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Enter)
+            if (e.Key == Key.Enter)
             {
-                e.SuppressKeyPress = true;
-                OnSearchClick(sender, EventArgs.Empty);
+                e.Handled = true;
+                OnSearchClick(sender, new RoutedEventArgs());
             }
         }
 
-        private async void OnSearchClick(object sender, EventArgs e)
+        private async void OnSearchClick(object sender, RoutedEventArgs e)
         {
             string rootDir = _txtRootDir.Text.Trim();
             string searchTerm = _txtSearchTerm.Text.Trim();
@@ -572,10 +1465,10 @@ namespace DatasulCompileGen.UI
             if (string.IsNullOrEmpty(rootDir) || !Directory.Exists(rootDir))
             {
                 MessageBox.Show(this,
-                    "Selecione um diretório válido onde estão os programas Progress.",
+                    "Selecione um diretório válido onde estão os programas Progress Datasul.",
                     "Diretório Inválido",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
 
@@ -584,8 +1477,8 @@ namespace DatasulCompileGen.UI
                 MessageBox.Show(this,
                     "Informe a palavra ou nome da tabela que deseja buscar (ex: es-teste-123).",
                     "Termo de Busca Obrigatório",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 _txtSearchTerm.Focus();
                 return;
             }
@@ -611,12 +1504,12 @@ namespace DatasulCompileGen.UI
             }
             catch (OperationCanceledException)
             {
-                _lblStatus.Text = "Busca cancelada pelo usuário.";
+                _lblStatus.Text = "Varredura cancelada pelo usuário.";
             }
             catch (Exception ex)
             {
                 _lblStatus.Text = "Erro na busca: " + ex.Message;
-                MessageBox.Show(this, ex.Message, "Erro durante a varredura", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, ex.Message, "Erro durante a varredura", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -624,7 +1517,7 @@ namespace DatasulCompileGen.UI
             }
         }
 
-        private void OnCancelSearchClick(object sender, EventArgs e)
+        private void OnCancelSearchClick(object sender, RoutedEventArgs e)
         {
             if (_cts != null && !_cts.IsCancellationRequested)
             {
@@ -638,10 +1531,10 @@ namespace DatasulCompileGen.UI
             {
                 RootDirectory = rootDir,
                 SearchTerm = searchTerm,
-                TrackIncludes = _chkTrackIncludes.Checked,
-                IgnoreComments = _chkIgnoreComments.Checked,
-                WholeWord = _chkWholeWord.Checked,
-                CaseSensitive = _chkCaseSensitive.Checked
+                TrackIncludes = _chkTrackIncludes.IsChecked == true,
+                IgnoreComments = _chkIgnoreComments.IsChecked == true,
+                WholeWord = _chkWholeWord.IsChecked == true,
+                CaseSensitive = _chkCaseSensitive.IsChecked == true
             };
 
             List<string> parsedExts = _txtExtensions.Text
@@ -660,15 +1553,20 @@ namespace DatasulCompileGen.UI
 
         private void SetSearchingState(bool searching)
         {
-            _btnSearch.Enabled = !searching;
-            _btnCancel.Enabled = searching;
-            _btnBrowseDir.Enabled = !searching;
-            _progressBar.Visible = searching;
+            _btnSearch.IsEnabled = !searching;
+            _btnSearch.Opacity = searching ? 0.5 : 1.0;
+            _btnCancel.IsEnabled = searching;
+            _btnCancel.Opacity = searching ? 1.0 : 0.45;
+            _btnBrowseDir.IsEnabled = !searching;
+            _progressBar.Visibility = searching ? Visibility.Visible : Visibility.Collapsed;
+            _statusDot.Fill = searching ? BrushBorderFocus : BrushEmeraldHover;
             if (searching)
             {
                 _progressBar.Value = 0;
             }
         }
+
+        // ── Carregamento de Resultados na UI ───────────────────────────────────────
 
         public void LoadReportIntoUI(SearchReport report)
         {
@@ -679,15 +1577,16 @@ namespace DatasulCompileGen.UI
             PopulateCompilablesListView();
             PopulateOccurrencesTreeView();
             RefreshScriptPreview();
+            UpdateKpiCards();
 
             int totalCompilables = report.CompilableResults.Count;
             int totalIncludes = report.AllResults.Count(r => !r.IsCompilable);
 
-            _tabCompilables.Text = string.Format("Programas p/ Compilar ({0})", totalCompilables);
-            _tabTreeSearch.Text = string.Format("Ocorrências Estilo VS Code ({0})", report.AllResults.Count);
+            _btnTabCompilables.Content = string.Format("Programas p/ Compilar ({0})", totalCompilables);
+            _btnTabOccurrences.Content = string.Format("Árvore VS Code ({0})", report.AllResults.Count);
 
             _lblStatus.Text = string.Format(
-                "Busca concluída em {0} ms | Arquivos varridos: {1} | Compiláveis impactados: {2} | Includes (.i) encontradas: {3}",
+                "Varredura concluída em {0} ms • {1} arquivos analisados • {2} programas compiláveis • {3} includes (.i)",
                 report.ElapsedMilliseconds,
                 report.TotalFilesScanned,
                 totalCompilables,
@@ -695,148 +1594,389 @@ namespace DatasulCompileGen.UI
 
             if (report.CompilableResults.Count > 0)
             {
-                FileSearchResult first = report.CompilableResults[0];
-                int firstLine = GetFirstRelevantLine(first);
-                ShowFileInCodePreview(first, firstLine);
+                FileSearchResult first = report.CompilableResults.FirstOrDefault(r => r.IsDirectMatch)
+                    ?? report.CompilableResults[0];
+                ShowFileInCodePreview(first, GetFirstRelevantLine(first));
             }
             else if (report.AllResults.Count > 0)
             {
                 FileSearchResult first = report.AllResults[0];
-                int firstLine = GetFirstRelevantLine(first);
-                ShowFileInCodePreview(first, firstLine);
+                ShowFileInCodePreview(first, GetFirstRelevantLine(first));
             }
             else
             {
-                _rtbCodePreview.Clear();
+                SetRichTextPlain(_rtbCodePreview, string.Empty);
                 _lblCodePreviewFile.Text = "Nenhuma ocorrência encontrada para '" + report.Options.SearchTerm + "'.";
-                _btnOpenFolder.Enabled = false;
+                _lblCodePreviewLineBadge.Text = "0 ocorr.";
+                _btnOpenFolder.IsEnabled = false;
             }
+        }
+
+        private void UpdateKpiCards()
+        {
+            if (_currentReport == null)
+            {
+                _lblKpiScanned.Text = "0";
+                _lblKpiCompilables.Text = "0";
+                _lblKpiViaInclude.Text = "0";
+                _lblKpiSelected.Text = "0";
+                return;
+            }
+
+            int viaIncludeCount = _currentReport.CompilableResults.Count(r => r.IsIncludeMatch);
+            int selectedCount = _currentReport.CompilableResults.Count(r => r.SelectedForCompile);
+
+            _lblKpiScanned.Text = _currentReport.TotalFilesScanned.ToString("N0");
+            _lblKpiScannedSub.Text = string.Format("Concluído em {0} ms", _currentReport.ElapsedMilliseconds);
+            _lblKpiCompilables.Text = _currentReport.CompilableResults.Count.ToString("N0");
+            _lblKpiViaInclude.Text = viaIncludeCount.ToString("N0");
+            _lblKpiSelected.Text = selectedCount.ToString("N0");
         }
 
         private void PopulateCompilablesListView()
         {
-            if (_currentReport == null)
+            _spCompilableItems.Children.Clear();
+            _compilableRenderedCount = 0;
+            _selectedProgramCardBorder = null;
+
+            if (_currentReport == null || _currentReport.CompilableResults.Count == 0)
             {
+                _spCompilableItems.Children.Add(BuildEmptyStateBlock(
+                    "Nenhum programa compilável encontrado",
+                    "Verifique o termo pesquisado ou as extensões selecionadas."));
                 return;
             }
 
             string filter = _txtFilterCompilables.Text.Trim();
-            _suppressItemCheck = true;
-            _lvCompilables.BeginUpdate();
-            try
-            {
-                _lvCompilables.Items.Clear();
 
-                foreach (FileSearchResult item in _currentReport.CompilableResults)
+            foreach (FileSearchResult item in _currentReport.CompilableResults)
+            {
+                if (!string.IsNullOrEmpty(filter) &&
+                    item.RelativePath.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0)
                 {
-                    if (!string.IsNullOrEmpty(filter) &&
-                        item.RelativePath.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                        continue;
-                    }
-
-                    string originText = item.IsDirectMatch && item.IsIncludeMatch
-                        ? "Direto + Include"
-                        : (item.IsDirectMatch ? "Direto" : "Via Include (.i)");
-
-                    string detailText;
-                    if (item.IsIncludeMatch && item.IncludeMatches.Count > 0)
-                    {
-                        detailText = item.IncludeMatches[0].ChainDescription;
-                    }
-                    else if (item.DirectMatches.Count > 0)
-                    {
-                        detailText = string.Format("Linha {0}: {1}", item.DirectMatches[0].LineNumber, item.DirectMatches[0].LineText.Trim());
-                    }
-                    else
-                    {
-                        detailText = string.Empty;
-                    }
-
-                    ListViewItem lvi = new ListViewItem(item.RelativePath)
-                    {
-                        Checked = item.SelectedForCompile,
-                        Tag = item
-                    };
-                    lvi.SubItems.Add(originText);
-                    lvi.SubItems.Add(item.TotalOccurrences.ToString());
-                    lvi.SubItems.Add(detailText);
-
-                    if (item.IsIncludeMatch && !item.IsDirectMatch)
-                    {
-                        lvi.ForeColor = Color.FromArgb(140, 215, 255);
-                    }
-
-                    _lvCompilables.Items.Add(lvi);
+                    continue;
                 }
+
+                UIElement rowCard = CreateCompilableProgramRowCard(item);
+                _spCompilableItems.Children.Add(rowCard);
+                _compilableRenderedCount++;
             }
-            finally
+        }
+
+        private UIElement CreateCompilableProgramRowCard(FileSearchResult item)
+        {
+            Border rowBorder = new Border
             {
-                _lvCompilables.EndUpdate();
-                _suppressItemCheck = false;
+                Background = BrushBgInput,
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(10, 8, 10, 8),
+                Margin = new Thickness(0, 0, 4, 6),
+                Cursor = Cursors.Hand
+            };
+
+            Grid g = new Grid();
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Checkbox
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Info
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Badges
+
+            CheckBox cb = CreateRowCheckBox(item.SelectedForCompile);
+            cb.Checked += (s, e) =>
+            {
+                item.SelectedForCompile = true;
+                UpdateKpiCards();
+                RefreshScriptPreview();
+            };
+            cb.Unchecked += (s, e) =>
+            {
+                item.SelectedForCompile = false;
+                UpdateKpiCards();
+                RefreshScriptPreview();
+            };
+            Grid.SetColumn(cb, 0);
+            g.Children.Add(cb);
+
+            StackPanel infoStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+
+            StackPanel titleRow = new StackPanel { Orientation = Orientation.Horizontal };
+            titleRow.Children.Add(CreateExtensionBadge(item.Extension));
+            titleRow.Children.Add(new TextBlock
+            {
+                Text = item.RelativePath,
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 13,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = BrushTextPrimary,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            infoStack.Children.Add(titleRow);
+
+            string detailText;
+            if (item.IsIncludeMatch && item.IncludeMatches.Count > 0)
+            {
+                detailText = "Cadeia: " + item.IncludeMatches[0].ChainDescription;
+            }
+            else if (item.DirectMatches.Count > 0)
+            {
+                detailText = string.Format("Linha {0}: {1}", item.DirectMatches[0].LineNumber, item.DirectMatches[0].LineText.Trim());
+            }
+            else
+            {
+                detailText = string.Empty;
             }
 
-            UpdateSelectedSummaryLabel();
+            if (!string.IsNullOrEmpty(detailText))
+            {
+                infoStack.Children.Add(new TextBlock
+                {
+                    Text = detailText,
+                    FontFamily = new FontFamily("Consolas"),
+                    FontSize = 11,
+                    Foreground = BrushTextSecondary,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    Margin = new Thickness(0, 3, 0, 0)
+                });
+            }
+
+            Grid.SetColumn(infoStack, 1);
+            g.Children.Add(infoStack);
+
+            // Badges à direita (DIRETO / VIA INCLUDE + Contagem)
+            StackPanel rightBadges = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(8, 0, 0, 0)
+            };
+
+            bool isViaInc = item.IsIncludeMatch && !item.IsDirectMatch;
+            rightBadges.Children.Add(CreateSemanticBadge(
+                item.IsDirectMatch && item.IsIncludeMatch ? "DIRETO + .I" : (isViaInc ? "VIA INCLUDE .I" : "DIRETO"),
+                isViaInc ? Color.FromRgb(12, 74, 110) : Color.FromRgb(6, 78, 59),
+                isViaInc ? Color.FromRgb(2, 132, 199) : Color.FromRgb(5, 150, 105),
+                isViaInc ? Color.FromRgb(56, 189, 248) : Color.FromRgb(52, 211, 153)));
+
+            rightBadges.Children.Add(CreateSemanticBadge(
+                string.Format("{0}x", item.TotalOccurrences),
+                ColBgSurface,
+                ColBorderDefault,
+                ColTextSecondary));
+
+            Grid.SetColumn(rightBadges, 2);
+            g.Children.Add(rightBadges);
+
+            rowBorder.Child = g;
+
+            rowBorder.MouseLeftButtonDown += (s, e) =>
+            {
+                if (_selectedProgramCardBorder != null)
+                {
+                    _selectedProgramCardBorder.BorderBrush = BrushBorderSubtle;
+                    _selectedProgramCardBorder.Background = BrushBgInput;
+                }
+                _selectedProgramCardBorder = rowBorder;
+                rowBorder.BorderBrush = BrushBorderFocus;
+                rowBorder.Background = new SolidColorBrush(Color.FromRgb(15, 23, 42));
+
+                ShowFileInCodePreview(item, GetFirstRelevantLine(item));
+            };
+
+            return rowBorder;
+        }
+
+        private static Border CreateExtensionBadge(string ext)
+        {
+            string label = (ext ?? ".p").ToUpperInvariant();
+            Color bg = Color.FromRgb(30, 27, 75);
+            Color fg = Color.FromRgb(165, 180, 252);
+
+            if (label == ".W")
+            {
+                bg = Color.FromRgb(59, 7, 100);
+                fg = Color.FromRgb(216, 180, 254);
+            }
+            else if (label == ".CLS")
+            {
+                bg = Color.FromRgb(69, 26, 3);
+                fg = Color.FromRgb(252, 211, 77);
+            }
+            else if (label == ".I")
+            {
+                bg = Color.FromRgb(67, 20, 7);
+                fg = Color.FromRgb(253, 186, 116);
+            }
+
+            return new Border
+            {
+                Background = new SolidColorBrush(bg),
+                CornerRadius = new CornerRadius(4),
+                Padding = new Thickness(5, 1, 5, 1),
+                Margin = new Thickness(0, 0, 7, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Child = new TextBlock
+                {
+                    Text = label,
+                    FontFamily = new FontFamily("Consolas"),
+                    FontSize = 10,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = new SolidColorBrush(fg)
+                }
+            };
+        }
+
+        private static Border CreateSemanticBadge(string text, Color bg, Color border, Color fg)
+        {
+            return new Border
+            {
+                Background = new SolidColorBrush(bg),
+                BorderBrush = new SolidColorBrush(border),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(7, 2, 7, 2),
+                Margin = new Thickness(4, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Child = new TextBlock
+                {
+                    Text = text,
+                    FontSize = 10,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = new SolidColorBrush(fg)
+                }
+            };
         }
 
         private void PopulateOccurrencesTreeView()
         {
-            _tvOccurrences.BeginUpdate();
-            try
+            _spOccurrenceTree.Children.Clear();
+            _treeFileNodesCount = 0;
+
+            if (_currentReport == null || _currentReport.AllResults.Count == 0)
             {
-                _tvOccurrences.Nodes.Clear();
-                if (_currentReport == null)
+                _spOccurrenceTree.Children.Add(BuildEmptyStateBlock(
+                    "Nenhuma ocorrência para exibir",
+                    "Realize uma busca para visualizar a árvore de arquivos e linhas no estilo VS Code."));
+                return;
+            }
+
+            foreach (FileSearchResult fileResult in _currentReport.AllResults)
+            {
+                _treeFileNodesCount++;
+
+                Border fileCard = new Border
                 {
-                    return;
+                    Background = BrushBgInput,
+                    BorderBrush = BrushBorderSubtle,
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(8),
+                    Padding = new Thickness(10, 8, 10, 8),
+                    Margin = new Thickness(0, 0, 4, 8)
+                };
+
+                StackPanel fileStack = new StackPanel();
+
+                // Header do Arquivo
+                StackPanel headerRow = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Margin = new Thickness(0, 0, 0, 6),
+                    Cursor = Cursors.Hand
+                };
+                headerRow.Children.Add(CreateExtensionBadge(fileResult.Extension));
+                headerRow.Children.Add(new TextBlock
+                {
+                    Text = fileResult.RelativePath,
+                    FontFamily = new FontFamily("Consolas"),
+                    FontSize = 12.5,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = BrushTextPrimary,
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+                headerRow.Children.Add(CreateSemanticBadge(
+                    fileResult.IsCompilable ? "COMPILÁVEL" : "INCLUDE .I",
+                    fileResult.IsCompilable ? Color.FromRgb(6, 78, 59) : Color.FromRgb(69, 26, 3),
+                    fileResult.IsCompilable ? Color.FromRgb(5, 150, 105) : Color.FromRgb(217, 119, 6),
+                    fileResult.IsCompilable ? Color.FromRgb(52, 211, 153) : Color.FromRgb(251, 191, 36)));
+
+                FileSearchResult capturedFile = fileResult;
+                headerRow.MouseLeftButtonDown += (s, e) =>
+                {
+                    ShowFileInCodePreview(capturedFile, GetFirstRelevantLine(capturedFile));
+                    SwitchRightTab(true);
+                };
+                fileStack.Children.Add(headerRow);
+
+                // Linhas diretas encontradas
+                foreach (LineMatch match in fileResult.DirectMatches)
+                {
+                    int lineNo = match.LineNumber;
+                    Border lineBtn = CreateTreeLineItem(
+                        string.Format("Linha {0,4}", lineNo),
+                        match.LineText.Trim(),
+                        Color.FromRgb(56, 189, 248),
+                        () =>
+                        {
+                            ShowFileInCodePreview(capturedFile, lineNo);
+                            SwitchRightTab(true);
+                        });
+                    fileStack.Children.Add(lineBtn);
                 }
 
-                foreach (FileSearchResult fileResult in _currentReport.AllResults)
+                // Linhas de Include
+                foreach (IncludeChainStep step in fileResult.IncludeMatches)
                 {
-                    string badge = fileResult.IsCompilable ? "[COMPILÁVEL]" : "[INCLUDE .i]";
-                    string headerText = string.Format("{0}  {1}  ({2} ocorr.)",
-                        fileResult.RelativePath,
-                        badge,
-                        fileResult.TotalOccurrences);
-
-                    TreeNode fileNode = new TreeNode(headerText)
-                    {
-                        Tag = new TreeNodePayload { Result = fileResult, LineNumber = GetFirstRelevantLine(fileResult) },
-                        ForeColor = fileResult.IsCompilable ? Color.FromArgb(180, 240, 180) : Color.FromArgb(255, 210, 120)
-                    };
-
-                    foreach (LineMatch match in fileResult.DirectMatches)
-                    {
-                        string lineLabel = string.Format("Linha {0}: {1}", match.LineNumber, match.LineText.Trim());
-                        TreeNode lineNode = new TreeNode(lineLabel)
+                    int lineNo = step.LineNumber;
+                    Border incBtn = CreateTreeLineItem(
+                        string.Format("Linha {0,4} [Include]", lineNo),
+                        string.Format("{0}   ({1})", step.LineText.Trim(), step.ChainDescription),
+                        Color.FromRgb(129, 140, 248),
+                        () =>
                         {
-                            Tag = new TreeNodePayload { Result = fileResult, LineNumber = match.LineNumber },
-                            ForeColor = FgPrimary
-                        };
-                        fileNode.Nodes.Add(lineNode);
-                    }
-
-                    foreach (IncludeChainStep step in fileResult.IncludeMatches)
-                    {
-                        string incLabel = string.Format("Linha {0} [Via Include]: {1}  ({2})",
-                            step.LineNumber,
-                            step.LineText.Trim(),
-                            step.ChainDescription);
-                        TreeNode incNode = new TreeNode(incLabel)
-                        {
-                            Tag = new TreeNodePayload { Result = fileResult, LineNumber = step.LineNumber },
-                            ForeColor = Color.FromArgb(140, 215, 255)
-                        };
-                        fileNode.Nodes.Add(incNode);
-                    }
-
-                    fileNode.Expand();
-                    _tvOccurrences.Nodes.Add(fileNode);
+                            ShowFileInCodePreview(capturedFile, lineNo);
+                            SwitchRightTab(true);
+                        });
+                    fileStack.Children.Add(incBtn);
                 }
+
+                fileCard.Child = fileStack;
+                _spOccurrenceTree.Children.Add(fileCard);
             }
-            finally
+        }
+
+        private static Border CreateTreeLineItem(string lineBadgeText, string codeSnippet, Color badgeColor, Action onClick)
+        {
+            Border b = new Border
             {
-                _tvOccurrences.EndUpdate();
-            }
+                Background = BrushBgSurface,
+                CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(8, 5, 8, 5),
+                Margin = new Thickness(12, 2, 0, 2),
+                Cursor = Cursors.Hand
+            };
+
+            StackPanel sp = new StackPanel { Orientation = Orientation.Horizontal };
+            sp.Children.Add(new TextBlock
+            {
+                Text = lineBadgeText + " : ",
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 11.5,
+                FontWeight = FontWeights.Bold,
+                Foreground = new SolidColorBrush(badgeColor)
+            });
+            sp.Children.Add(new TextBlock
+            {
+                Text = codeSnippet,
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 11.5,
+                Foreground = BrushTextSecondary,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            });
+
+            b.Child = sp;
+            b.MouseEnter += (s, e) => b.Background = BrushBgElevated;
+            b.MouseLeave += (s, e) => b.Background = BrushBgSurface;
+            b.MouseLeftButtonDown += (s, e) => onClick();
+            return b;
         }
 
         private void SetAllCompilableChecks(bool checkState)
@@ -846,85 +1986,14 @@ namespace DatasulCompileGen.UI
                 return;
             }
 
-            _suppressItemCheck = true;
-            try
+            foreach (FileSearchResult item in _currentReport.CompilableResults)
             {
-                foreach (ListViewItem lvi in _lvCompilables.Items)
-                {
-                    lvi.Checked = checkState;
-                    FileSearchResult res = lvi.Tag as FileSearchResult;
-                    if (res != null)
-                    {
-                        res.SelectedForCompile = checkState;
-                    }
-                }
-            }
-            finally
-            {
-                _suppressItemCheck = false;
+                item.SelectedForCompile = checkState;
             }
 
-            UpdateSelectedSummaryLabel();
+            PopulateCompilablesListView();
+            UpdateKpiCards();
             RefreshScriptPreview();
-        }
-
-        private void OnCompilableItemChecked(object sender, ItemCheckedEventArgs e)
-        {
-            if (_suppressItemCheck || e.Item == null)
-            {
-                return;
-            }
-
-            FileSearchResult res = e.Item.Tag as FileSearchResult;
-            if (res != null)
-            {
-                res.SelectedForCompile = e.Item.Checked;
-            }
-
-            UpdateSelectedSummaryLabel();
-            RefreshScriptPreview();
-        }
-
-        private void UpdateSelectedSummaryLabel()
-        {
-            if (_currentReport == null)
-            {
-                _lblSelectedSummary.Text = "0 selecionados para o script .p";
-                return;
-            }
-
-            int selectedCount = _currentReport.CompilableResults.Count(r => r.SelectedForCompile);
-            _lblSelectedSummary.Text = string.Format("{0} de {1} selecionados p/ compilar",
-                selectedCount,
-                _currentReport.CompilableResults.Count);
-        }
-
-        private void OnCompilableSelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (_lvCompilables.SelectedItems.Count == 0)
-            {
-                return;
-            }
-
-            FileSearchResult res = _lvCompilables.SelectedItems[0].Tag as FileSearchResult;
-            if (res != null)
-            {
-                ShowFileInCodePreview(res, GetFirstRelevantLine(res));
-            }
-        }
-
-        private void OnTreeOccurrenceAfterSelect(object sender, TreeViewEventArgs e)
-        {
-            if (e.Node == null)
-            {
-                return;
-            }
-
-            TreeNodePayload payload = e.Node.Tag as TreeNodePayload;
-            if (payload != null && payload.Result != null)
-            {
-                ShowFileInCodePreview(payload.Result, payload.LineNumber);
-            }
         }
 
         private static int GetFirstRelevantLine(FileSearchResult res)
@@ -944,6 +2013,8 @@ namespace DatasulCompileGen.UI
             return 1;
         }
 
+        // ── Visualizador de Código com Destaque de Linha e Termo ──────────────────
+
         private void ShowFileInCodePreview(FileSearchResult result, int targetLineNumber)
         {
             if (result == null || !File.Exists(result.FilePath))
@@ -952,8 +2023,9 @@ namespace DatasulCompileGen.UI
             }
 
             _currentPreviewFilePath = result.FilePath;
-            _btnOpenFolder.Enabled = true;
-            _lblCodePreviewFile.Text = string.Format("{0}  (Linha {1})", result.RelativePath, targetLineNumber);
+            _btnOpenFolder.IsEnabled = true;
+            _lblCodePreviewFile.Text = result.RelativePath;
+            _lblCodePreviewLineBadge.Text = string.Format("Linha {0}", targetLineNumber);
 
             string content;
             try
@@ -962,91 +2034,131 @@ namespace DatasulCompileGen.UI
             }
             catch (Exception ex)
             {
-                _rtbCodePreview.Text = "Erro ao ler arquivo: " + ex.Message;
+                SetRichTextPlain(_rtbCodePreview, "Erro ao ler arquivo: " + ex.Message);
                 return;
             }
 
             string[] lines = ProgressCodeAnalyzer.SplitLines(content);
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            int targetCharStart = 0;
-            int targetCharLength = 0;
+            string searchTerm = _currentReport != null ? _currentReport.Options.SearchTerm : string.Empty;
+            StringComparison cmp = (_currentReport != null && _currentReport.Options.CaseSensitive)
+                ? StringComparison.Ordinal
+                : StringComparison.OrdinalIgnoreCase;
+
+            FlowDocument doc = new FlowDocument
+            {
+                PageWidth = 2400,
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 13,
+                PagePadding = new Thickness(8)
+            };
+
+            Paragraph para = new Paragraph { Margin = new Thickness(0), LineHeight = 20 };
+            Run targetRunToBringIntoView = null;
 
             for (int i = 0; i < lines.Length; i++)
             {
                 int lineNo = i + 1;
-                string prefix = string.Format("{0,5} | ", lineNo);
-                int lineStart = sb.Length;
-                sb.Append(prefix).Append(lines[i]).Append('\n');
+                bool isTargetLine = (lineNo == targetLineNumber);
 
-                if (lineNo == targetLineNumber)
+                Run gutterRun = new Run(string.Format("{0,5} │ ", lineNo))
                 {
-                    targetCharStart = lineStart;
-                    targetCharLength = sb.Length - lineStart - 1;
+                    Foreground = isTargetLine
+                        ? new SolidColorBrush(Color.FromRgb(56, 189, 248))
+                        : BrushTextMuted,
+                    FontWeight = isTargetLine ? FontWeights.Bold : FontWeights.Normal
+                };
+
+                if (isTargetLine)
+                {
+                    gutterRun.Background = new SolidColorBrush(Color.FromRgb(30, 58, 95));
+                    targetRunToBringIntoView = gutterRun;
                 }
+
+                para.Inlines.Add(gutterRun);
+
+                string lineText = lines[i];
+                AppendLineWithTermHighlight(para, lineText, searchTerm, cmp, isTargetLine);
+                para.Inlines.Add(new LineBreak());
             }
 
-            _rtbCodePreview.SuspendLayout();
-            _rtbCodePreview.Clear();
-            _rtbCodePreview.Text = sb.ToString();
+            doc.Blocks.Add(para);
+            _rtbCodePreview.Document = doc;
 
-            // Destaca a linha alvo
-            if (targetCharLength > 0 && targetCharStart + targetCharLength <= _rtbCodePreview.TextLength)
+            if (targetRunToBringIntoView != null)
             {
-                _rtbCodePreview.Select(targetCharStart, targetCharLength);
-                _rtbCodePreview.SelectionBackColor = HighlightLineBg;
-                _rtbCodePreview.SelectionColor = Color.White;
+                targetRunToBringIntoView.BringIntoView();
             }
-
-            // Destaca o termo pesquisado no texto
-            if (_currentReport != null && !string.IsNullOrEmpty(_currentReport.Options.SearchTerm))
-            {
-                HighlightSearchTermInPreview(_currentReport.Options.SearchTerm, _currentReport.Options.CaseSensitive);
-            }
-
-            // Rola até a linha alvo
-            int scrollPos = Math.Max(0, targetCharStart);
-            _rtbCodePreview.Select(scrollPos, 0);
-            _rtbCodePreview.ScrollToCaret();
-            _rtbCodePreview.ResumeLayout();
         }
 
-        private void HighlightSearchTermInPreview(string term, bool caseSensitive)
+        private static void AppendLineWithTermHighlight(
+            Paragraph para,
+            string lineText,
+            string searchTerm,
+            StringComparison cmp,
+            bool isTargetLine)
         {
-            if (string.IsNullOrEmpty(term))
+            SolidColorBrush lineBg = isTargetLine
+                ? new SolidColorBrush(Color.FromRgb(30, 58, 95))
+                : Brushes.Transparent;
+
+            if (string.IsNullOrEmpty(searchTerm) || string.IsNullOrEmpty(lineText))
             {
+                Run r = new Run(lineText ?? string.Empty)
+                {
+                    Foreground = isTargetLine ? Brushes.White : BrushTextPrimary,
+                    Background = lineBg
+                };
+                para.Inlines.Add(r);
                 return;
             }
 
-            StringComparison cmp = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-            string text = _rtbCodePreview.Text;
             int idx = 0;
-            int highlightCount = 0;
-
-            while (idx <= text.Length - term.Length && highlightCount < 300)
+            while (idx < lineText.Length)
             {
-                int found = text.IndexOf(term, idx, cmp);
+                int found = lineText.IndexOf(searchTerm, idx, cmp);
                 if (found < 0)
                 {
+                    Run tail = new Run(lineText.Substring(idx))
+                    {
+                        Foreground = isTargetLine ? Brushes.White : BrushTextPrimary,
+                        Background = lineBg
+                    };
+                    para.Inlines.Add(tail);
                     break;
                 }
 
-                _rtbCodePreview.Select(found, term.Length);
-                _rtbCodePreview.SelectionBackColor = HighlightTermBg;
-                _rtbCodePreview.SelectionColor = HighlightTermFg;
+                if (found > idx)
+                {
+                    Run before = new Run(lineText.Substring(idx, found - idx))
+                    {
+                        Foreground = isTargetLine ? Brushes.White : BrushTextPrimary,
+                        Background = lineBg
+                    };
+                    para.Inlines.Add(before);
+                }
 
-                idx = found + term.Length;
-                highlightCount++;
+                Run matchRun = new Run(lineText.Substring(found, searchTerm.Length))
+                {
+                    Background = new SolidColorBrush(Color.FromRgb(180, 83, 9)),
+                    Foreground = new SolidColorBrush(Color.FromRgb(254, 240, 138)),
+                    FontWeight = FontWeights.Bold
+                };
+                para.Inlines.Add(matchRun);
+
+                idx = found + searchTerm.Length;
             }
         }
+
+        // ── Geração e Exportação do Script .p ─────────────────────────────────────
 
         private CompileScriptOptions BuildCompileScriptOptions(string targetFilePath)
         {
             CompileScriptOptions opts = new CompileScriptOptions
             {
-                ScriptMode = _cmbScriptMode.SelectedIndex == 0
+                ScriptMode = _scriptModeIndex == 0
                     ? CompileScriptMode.WithErrorLog
                     : CompileScriptMode.PureCompileSave,
-                PathFormat = _cmbPathFormat.SelectedIndex == 0
+                PathFormat = _pathFormatIndex == 0
                     ? CompilePathFormat.RelativeToRoot
                     : CompilePathFormat.AbsolutePath,
                 UseForwardSlashes = true,
@@ -1061,23 +2173,43 @@ namespace DatasulCompileGen.UI
         {
             if (_currentReport == null)
             {
-                _rtbScriptPreview.Text = "/* Realize uma busca para visualizar o script .p de compilacao gerado automaticamente. */";
+                _cachedScriptPreviewText = "/* Realize uma busca para visualizar o script .p de compilacao gerado automaticamente. */";
+                SetRichTextPlain(_rtbScriptPreview, _cachedScriptPreviewText);
                 return;
             }
 
             CompileScriptOptions opts = BuildCompileScriptOptions(string.Empty);
-            _rtbScriptPreview.Text = _scriptGenerator.GenerateScript(_currentReport.CompilableResults, opts);
+            _cachedScriptPreviewText = _scriptGenerator.GenerateScript(_currentReport.CompilableResults, opts);
+            SetRichTextPlain(_rtbScriptPreview, _cachedScriptPreviewText);
         }
 
-        private void OnSaveScriptClick(object sender, EventArgs e)
+        private static void SetRichTextPlain(RichTextBox rtb, string text)
+        {
+            FlowDocument doc = new FlowDocument
+            {
+                PageWidth = 2400,
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 13,
+                PagePadding = new Thickness(8)
+            };
+            Paragraph p = new Paragraph(new Run(text ?? string.Empty))
+            {
+                Margin = new Thickness(0),
+                LineHeight = 20
+            };
+            doc.Blocks.Add(p);
+            rtb.Document = doc;
+        }
+
+        private void OnSaveScriptClick(object sender, RoutedEventArgs e)
         {
             if (_currentReport == null || !_currentReport.CompilableResults.Any(r => r.SelectedForCompile))
             {
                 MessageBox.Show(this,
                     "Não há programas compiláveis selecionados para gerar o arquivo .p.\nRealize uma busca e marque ao menos um programa.",
                     "Nenhum Programa Selecionado",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 return;
             }
 
@@ -1086,45 +2218,47 @@ namespace DatasulCompileGen.UI
                 ? "compilar-programas.p"
                 : string.Format("compilar-{0}.p", safeTerm);
 
-            using (SaveFileDialog dlg = new SaveFileDialog())
+            using (WinForms.SaveFileDialog dlg = new WinForms.SaveFileDialog())
             {
                 dlg.Title = "Salvar Script Progress de Compilação (.p)";
                 dlg.Filter = "Programa Progress ABL (*.p)|*.p|Todos os Arquivos (*.*)|*.*";
                 dlg.FileName = defaultFileName;
                 dlg.DefaultExt = "p";
 
-                if (dlg.ShowDialog(this) == DialogResult.OK)
+                if (dlg.ShowDialog() == WinForms.DialogResult.OK)
                 {
                     CompileScriptOptions opts = BuildCompileScriptOptions(dlg.FileName);
                     string finalScript = _scriptGenerator.GenerateScript(_currentReport.CompilableResults, opts);
                     _scriptGenerator.SaveScriptToFile(finalScript, dlg.FileName);
-                    _rtbScriptPreview.Text = finalScript;
-                    _tabRight.SelectedTab = _tabScriptPreview;
 
-                    _lblStatus.Text = "Arquivo .p gerado com sucesso em: " + dlg.FileName;
+                    _cachedScriptPreviewText = finalScript;
+                    SetRichTextPlain(_rtbScriptPreview, finalScript);
+                    SwitchRightTab(false);
+
+                    _lblStatus.Text = "Arquivo .p salvo com sucesso em: " + dlg.FileName;
                     MessageBox.Show(this,
                         string.Format("Script de compilação salvo com sucesso!\n\nArquivo: {0}\nProgramas incluídos: {1}",
                             dlg.FileName,
                             _currentReport.CompilableResults.Count(r => r.SelectedForCompile)),
                         "Script .p Gerado",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
                 }
             }
         }
 
-        private void OnCopyScriptClick(object sender, EventArgs e)
+        private void OnCopyScriptClick(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(_rtbScriptPreview.Text))
+            if (string.IsNullOrWhiteSpace(_cachedScriptPreviewText))
             {
                 return;
             }
 
-            Clipboard.SetText(_rtbScriptPreview.Text);
+            Clipboard.SetText(_cachedScriptPreviewText);
             _lblStatus.Text = "Código do script .p copiado para a área de transferência!";
         }
 
-        private void OnOpenFolderClick(object sender, EventArgs e)
+        private void OnOpenFolderClick(object sender, RoutedEventArgs e)
         {
             if (!string.IsNullOrEmpty(_currentPreviewFilePath) && File.Exists(_currentPreviewFilePath))
             {
@@ -1138,34 +2272,41 @@ namespace DatasulCompileGen.UI
             {
                 return string.Empty;
             }
-            char[] invalid = Path.GetInvalidFileNameChars();
+            char[] invalid = System.IO.Path.GetInvalidFileNameChars();
             return new string(input.Trim().Select(c => invalid.Contains(c) ? '-' : c).ToArray());
         }
 
-        // Métodos auxiliares para verificação automatizada (Phase3Verifier)
+        // ── Métodos Públicos de Verificação Automatizada (Phase3Verifier) ─────────
+
         public int GetCompilableListViewCount()
         {
-            return _lvCompilables.Items.Count;
+            return _compilableRenderedCount;
         }
 
         public int GetTreeNodesCount()
         {
-            return _tvOccurrences.Nodes.Count;
+            return _treeFileNodesCount;
         }
 
         public string GetGeneratedScriptPreviewText()
         {
-            return _rtbScriptPreview.Text;
+            return _cachedScriptPreviewText;
         }
 
         public void SetScriptModeIndex(int index)
         {
-            _cmbScriptMode.SelectedIndex = index;
+            _scriptModeIndex = index;
+            ApplySegmentedOptionVisual(_btnModeErrorLog, index == 0);
+            ApplySegmentedOptionVisual(_btnModePure, index == 1);
+            RefreshScriptPreview();
         }
 
         public void SetPathFormatIndex(int index)
         {
-            _cmbPathFormat.SelectedIndex = index;
+            _pathFormatIndex = index;
+            ApplySegmentedOptionVisual(_btnPathRelative, index == 0);
+            ApplySegmentedOptionVisual(_btnPathAbsolute, index == 1);
+            RefreshScriptPreview();
         }
     }
 }
