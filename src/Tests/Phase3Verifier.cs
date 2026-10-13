@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Windows;
+using System.Windows.Controls;
 using DatasulCompileGen.Core;
 using DatasulCompileGen.UI;
 
@@ -139,6 +141,20 @@ namespace DatasulCompileGen.Tests
                         form.ToggleTheme();
                         Assert(form.IsDarkModeActive() == true,
                             "Apos segundo ToggleTheme, o tema ativo deve retornar para Dark Mode (true).");
+
+                        // Verificacao do Botao Sobre e Identidade Macritec
+                        Button btnAbout = form.GetAboutButton();
+                        Assert(btnAbout != null, "Botao Sobre deve existir no cabecalho.");
+                        Assert(btnAbout.Visibility == Visibility.Visible, "Botao Sobre deve estar visivel.");
+
+                        TextBlock footer = form.GetFooterAttribution();
+                        Assert(footer != null, "Rodape com identificacao da Macritec deve existir.");
+                        Assert(footer.Text.Contains("Macritec") && footer.Text.Contains("oficial.macritec@gmail.com"),
+                            "Rodape deve conter 'Macritec' e 'oficial.macritec@gmail.com'.");
+
+                        Window aboutDialog = form.ShowAboutDialog(false);
+                        Assert(aboutDialog != null, "Janela de Sobre deve ser instanciada.");
+                        aboutDialog.Close();
                     }
                     finally
                     {

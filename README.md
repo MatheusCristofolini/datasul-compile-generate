@@ -43,3 +43,11 @@ Caso realize alterações no código-fonte em `src/`, basta executar no PowerShe
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 ```
+
+---
+
+## Desenvolvido por
+
+**Macritec**  
+E-mail: [oficial.macritec@gmail.com](mailto:oficial.macritec@gmail.com)
+

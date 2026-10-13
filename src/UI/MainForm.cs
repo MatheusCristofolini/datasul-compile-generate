@@ -87,6 +87,8 @@ namespace DatasulCompileGen.UI
         private const string SvgHistory = "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8 M3 3v5h5 M12 7v5l4 2";
         private const string SvgSun = "M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M2 12h2 M20 12h2 M6.34 17.66l-1.41 1.41 M19.07 4.93l-1.41 1.41 M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z";
         private const string SvgMoon = "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z";
+        private const string SvgInfo = "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 16v-4 M12 8h.01";
+        private const string SvgMail = "M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z M22 6l-10 7L2 6";
 
         // Controles de Busca
         private TextBox _txtRootDir;
@@ -183,9 +185,11 @@ namespace DatasulCompileGen.UI
         private Border _selectedProgramCardBorder;
         private int _currentPreviewTargetLine = 1;
 
-        // Alternância de Tema Dark / Light
+        // Alternância de Tema Dark / Light e Identidade (Macritec)
         private bool _isDarkMode = true;
         private Button _btnThemeToggle;
+        private Button _btnAbout;
+        private TextBlock _lblFooterAttribution;
         private Border _headerIconBadge;
         private System.Windows.Shapes.Path _headerIconPath;
 
@@ -313,6 +317,7 @@ namespace DatasulCompileGen.UI
             rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 1: Search Command Panel
             rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 2: KPI Cards
             rootGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // 3: Split Workspace
+            rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 4: Footer Bar (Macritec attribution)
 
             // 0. Header Bar
             UIElement headerBar = BuildHeaderBar();
@@ -333,6 +338,11 @@ namespace DatasulCompileGen.UI
             UIElement workspace = BuildMainWorkspace();
             Grid.SetRow(workspace, 3);
             rootGrid.Children.Add(workspace);
+
+            // 4. Footer Bar
+            UIElement footerBar = BuildFooterBar();
+            Grid.SetRow(footerBar, 4);
+            rootGrid.Children.Add(footerBar);
 
             Content = rootGrid;
             RefreshScriptPreview();
@@ -379,13 +389,81 @@ namespace DatasulCompileGen.UI
             Grid.SetColumn(leftBrand, 0);
             header.Children.Add(leftBrand);
 
+            StackPanel rightControls = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+
+            _btnAbout = CreateActionButton(
+                "Sobre",
+                SvgInfo,
+                BrushBgElevated,
+                new SolidColorBrush(Color.FromRgb(51, 65, 85)),
+                ColBorderDefault,
+                82,
+                36,
+                BrushTextPrimary,
+                BrushTextSecondary);
+            _btnAbout.ToolTip = "Sobre o aplicativo, desenvolvedor e suporte (Macritec)";
+            _btnAbout.Margin = new Thickness(0, 0, 8, 0);
+            _btnAbout.Click += (s, e) => ShowAboutDialog();
+            _btnAbout.MouseEnter += (s, e) =>
+            {
+                if (_btnAbout.IsEnabled)
+                {
+                    _btnAbout.Background = _isDarkMode 
+                        ? new SolidColorBrush(Color.FromRgb(51, 65, 85)) 
+                        : new SolidColorBrush(Color.FromRgb(203, 213, 225));
+                }
+            };
+            _btnAbout.MouseLeave += (s, e) =>
+            {
+                if (_btnAbout.IsEnabled)
+                {
+                    _btnAbout.Background = BrushBgElevated;
+                }
+            };
+            rightControls.Children.Add(_btnAbout);
+
             _btnThemeToggle = CreateThemeToggleButton();
             _btnThemeToggle.VerticalAlignment = VerticalAlignment.Center;
             _btnThemeToggle.Click += (s, e) => ToggleTheme();
-            Grid.SetColumn(_btnThemeToggle, 1);
-            header.Children.Add(_btnThemeToggle);
+            rightControls.Children.Add(_btnThemeToggle);
+
+            Grid.SetColumn(rightControls, 1);
+            header.Children.Add(rightControls);
 
             return header;
+        }
+
+        private UIElement BuildFooterBar()
+        {
+            Grid footer = new Grid { Margin = new Thickness(0, 6, 0, 0) };
+            footer.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            footer.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            _lblFooterAttribution = new TextBlock
+            {
+                Text = "Created by Macritec  •  oficial.macritec@gmail.com",
+                FontSize = 11,
+                Foreground = BrushTextMuted,
+                Opacity = 0.65,
+                Cursor = Cursors.Hand,
+                ToolTip = "Clique para abrir detalhes do desenvolvedor e suporte"
+            };
+            _lblFooterAttribution.MouseEnter += (s, e) =>
+            {
+                _lblFooterAttribution.Opacity = 1.0;
+                _lblFooterAttribution.TextDecorations = TextDecorations.Underline;
+            };
+            _lblFooterAttribution.MouseLeave += (s, e) =>
+            {
+                _lblFooterAttribution.Opacity = 0.65;
+                _lblFooterAttribution.TextDecorations = null;
+            };
+            _lblFooterAttribution.MouseLeftButtonUp += (s, e) => ShowAboutDialog();
+
+            Grid.SetColumn(_lblFooterAttribution, 1);
+            footer.Children.Add(_lblFooterAttribution);
+
+            return footer;
         }
 
         private UIElement BuildSearchCommandCard()
@@ -1348,6 +1426,34 @@ namespace DatasulCompileGen.UI
             return cb;
         }
 
+        private static StackPanel CreateButtonContent(string text, string svgPath, Brush textBrush, Brush iconBrush)
+        {
+            StackPanel content = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            if (!string.IsNullOrEmpty(svgPath))
+            {
+                UIElement icon = CreateSvgIcon(svgPath, iconBrush ?? Brushes.White, 15);
+                content.Children.Add(icon);
+            }
+
+            content.Children.Add(new TextBlock
+            {
+                Text = text,
+                FontSize = 12.5,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = textBrush ?? Brushes.White,
+                Margin = new Thickness(string.IsNullOrEmpty(svgPath) ? 0 : 8, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            });
+
+            return content;
+        }
+
         private static Button CreateActionButton(
             string text,
             string svgPath,
@@ -1385,29 +1491,6 @@ namespace DatasulCompileGen.UI
             Brush textBrush,
             Brush iconBrush)
         {
-            StackPanel content = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-
-            if (!string.IsNullOrEmpty(svgPath))
-            {
-                UIElement icon = CreateSvgIcon(svgPath, iconBrush ?? Brushes.White, 15);
-                content.Children.Add(icon);
-            }
-
-            content.Children.Add(new TextBlock
-            {
-                Text = text,
-                FontSize = 12.5,
-                FontWeight = FontWeights.SemiBold,
-                Foreground = textBrush ?? Brushes.White,
-                Margin = new Thickness(string.IsNullOrEmpty(svgPath) ? 0 : 8, 0, 0, 0),
-                VerticalAlignment = VerticalAlignment.Center
-            });
-
             Button btn = new Button
             {
                 Width = width,
@@ -1416,7 +1499,7 @@ namespace DatasulCompileGen.UI
                 BorderBrush = borderBrush,
                 BorderThickness = new Thickness(1),
                 Cursor = Cursors.Hand,
-                Content = content
+                Content = CreateButtonContent(text, svgPath, textBrush, iconBrush)
             };
 
             btn.Template = CreateRoundedButtonTemplate(8);
@@ -3311,6 +3394,213 @@ namespace DatasulCompileGen.UI
                     }
                 }
             }
+        }
+
+        public Button GetAboutButton()
+        {
+            return _btnAbout;
+        }
+
+        public TextBlock GetFooterAttribution()
+        {
+            return _lblFooterAttribution;
+        }
+
+        public Window ShowAboutDialog(bool showModal = true)
+        {
+            Window aboutWindow = new Window
+            {
+                Title = "Sobre — Macritec",
+                Width = 470,
+                SizeToContent = SizeToContent.Height,
+                ResizeMode = ResizeMode.NoResize,
+                ShowInTaskbar = false,
+                Background = BrushBgCanvas,
+                Foreground = BrushTextPrimary,
+                FontFamily = new FontFamily("Segoe UI")
+            };
+
+            if (IsLoaded || IsVisible)
+            {
+                aboutWindow.Owner = this;
+                aboutWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            }
+            else
+            {
+                aboutWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            }
+
+            Border card = new Border
+            {
+                Background = BrushBgSurface,
+                BorderBrush = BrushBorderDefault,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(12),
+                Margin = new Thickness(16),
+                Padding = new Thickness(22)
+            };
+
+            StackPanel panel = new StackPanel();
+
+            // Top Header: Icon + Title
+            StackPanel headerStack = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 16) };
+
+            Border iconBadge = new Border
+            {
+                Width = 44,
+                Height = 44,
+                CornerRadius = new CornerRadius(10),
+                Background = _isDarkMode ? new SolidColorBrush(Color.FromRgb(23, 37, 84)) : new SolidColorBrush(Color.FromRgb(224, 242, 254)),
+                BorderBrush = _isDarkMode ? new SolidColorBrush(Color.FromRgb(59, 130, 246)) : new SolidColorBrush(Color.FromRgb(56, 189, 248)),
+                BorderThickness = new Thickness(1),
+                Margin = new Thickness(0, 0, 14, 0),
+                Child = CreateSvgIcon(SvgLayers, _isDarkMode ? Color.FromRgb(96, 165, 250) : Color.FromRgb(2, 132, 199), 22)
+            };
+            headerStack.Children.Add(iconBadge);
+
+            StackPanel titleInfo = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            titleInfo.Children.Add(new TextBlock
+            {
+                Text = "Datasul Search & Compile Generator",
+                FontSize = 15.5,
+                FontWeight = FontWeights.Bold,
+                Foreground = BrushTextPrimary
+            });
+            titleInfo.Children.Add(new TextBlock
+            {
+                Text = "Versão 1.0.0 — Progress 4GL / OpenEdge ABL",
+                FontSize = 12,
+                Foreground = BrushTextSecondary,
+                Margin = new Thickness(0, 2, 0, 0)
+            });
+            headerStack.Children.Add(titleInfo);
+            panel.Children.Add(headerStack);
+
+            // Separator
+            panel.Children.Add(new Border
+            {
+                Height = 1,
+                Background = BrushBorderSubtle,
+                Margin = new Thickness(0, 0, 0, 14)
+            });
+
+            // Description
+            panel.Children.Add(new TextBlock
+            {
+                Text = "Ferramenta de alta produtividade para desenvolvedores e consultores Datasul. Rastreia dependências reversas de includes (.i), analisa impacto em alterações de tabelas e gera scripts de compilação COMPILE SAVE otimizados.",
+                FontSize = 12.5,
+                Foreground = BrushTextSecondary,
+                TextWrapping = TextWrapping.Wrap,
+                LineHeight = 18,
+                Margin = new Thickness(0, 0, 0, 16)
+            });
+
+            // Author Box (Macritec attribution)
+            Border authorBox = new Border
+            {
+                Background = _isDarkMode ? BrushBgElevated : new SolidColorBrush(Color.FromRgb(241, 245, 249)),
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(14, 12, 14, 12),
+                Margin = new Thickness(0, 0, 0, 18)
+            };
+
+            StackPanel authorStack = new StackPanel();
+
+            // Created by Macritec
+            StackPanel createdByRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
+            createdByRow.Children.Add(CreateSvgIcon(SvgCode, _isDarkMode ? Color.FromRgb(56, 189, 248) : Color.FromRgb(2, 132, 199), 14));
+            TextBlock lblCreated = new TextBlock
+            {
+                Text = "Created by Macritec",
+                FontSize = 13,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = BrushTextPrimary,
+                Margin = new Thickness(8, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            createdByRow.Children.Add(lblCreated);
+            authorStack.Children.Add(createdByRow);
+
+            // Email row
+            StackPanel emailRow = new StackPanel { Orientation = Orientation.Horizontal };
+            emailRow.Children.Add(CreateSvgIcon(SvgMail, _isDarkMode ? Color.FromRgb(148, 163, 184) : Color.FromRgb(100, 116, 139), 14));
+            TextBlock lblEmail = new TextBlock
+            {
+                Text = "oficial.macritec@gmail.com",
+                FontSize = 12.5,
+                Foreground = _isDarkMode ? new SolidColorBrush(Color.FromRgb(96, 165, 250)) : new SolidColorBrush(Color.FromRgb(37, 99, 235)),
+                Margin = new Thickness(8, 0, 0, 0),
+                Cursor = Cursors.Hand,
+                ToolTip = "Clique para enviar um e-mail",
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            lblEmail.MouseLeftButtonUp += (s, e) =>
+            {
+                try { Process.Start(new ProcessStartInfo("mailto:oficial.macritec@gmail.com") { UseShellExecute = true }); } catch { }
+            };
+            emailRow.Children.Add(lblEmail);
+            authorStack.Children.Add(emailRow);
+
+            authorBox.Child = authorStack;
+            panel.Children.Add(authorBox);
+
+            // Action Buttons: Copiar E-mail and Fechar
+            Grid actionsGrid = new Grid();
+            actionsGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            actionsGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            actionsGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            actionsGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            Button btnCopyEmail = null;
+            btnCopyEmail = CreateActionButton(
+                "Copiar E-mail",
+                SvgCopy,
+                BrushBgElevated,
+                new SolidColorBrush(_isDarkMode ? Color.FromRgb(51, 65, 85) : Color.FromRgb(203, 213, 225)),
+                ColBorderDefault,
+                135,
+                34,
+                BrushTextPrimary,
+                BrushTextSecondary);
+            btnCopyEmail.Click += (s, e) =>
+            {
+                try
+                {
+                    Clipboard.SetText("oficial.macritec@gmail.com");
+                    btnCopyEmail.Content = CreateButtonContent("Copiado!", SvgCheck, BrushEmeraldHover, BrushEmeraldHover);
+                }
+                catch { }
+            };
+            Grid.SetColumn(btnCopyEmail, 1);
+            actionsGrid.Children.Add(btnCopyEmail);
+
+            Button btnClose = CreateActionButton(
+                "Fechar",
+                null,
+                BrushPrimaryBlue,
+                BrushPrimaryBlueHover,
+                Color.FromRgb(96, 165, 250),
+                85,
+                34);
+            btnClose.Click += (s, e) => aboutWindow.Close();
+            Grid.SetColumn(btnClose, 3);
+            actionsGrid.Children.Add(btnClose);
+
+            panel.Children.Add(actionsGrid);
+
+            card.Child = panel;
+            aboutWindow.Content = card;
+            if (showModal)
+            {
+                aboutWindow.ShowDialog();
+            }
+            else
+            {
+                aboutWindow.Show();
+            }
+            return aboutWindow;
         }
 
         // ── Atalhos Globais de Teclado (Ctrl+F, Ctrl+T, F3, Esc) ───────────────────
