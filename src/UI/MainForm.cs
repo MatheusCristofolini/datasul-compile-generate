@@ -13,6 +13,7 @@ using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Media.Effects;
 using DatasulCompileGen.Core;
 using WinForms = System.Windows.Forms;
 
@@ -117,6 +118,27 @@ namespace DatasulCompileGen.UI
         private int _pathFormatIndex; // 0 = RelativeToRoot, 1 = AbsolutePath (Padrão = 1)
         private RichTextBox _rtbScriptPreview;
         private string _cachedScriptPreviewText;
+
+        // Barra Flutuante de Localização no Editor (Ctrl + F)
+        private class TextFindMatch
+        {
+            public TextPointer Start { get; set; }
+            public TextPointer End { get; set; }
+            public Paragraph Paragraph { get; set; }
+            public Run OwnerRun { get; set; }
+            public int LineNumber { get; set; }
+            public int MatchIndex { get; set; }
+        }
+
+        private Border _findBarBorder;
+        private TextBox _txtEditorFind;
+        private TextBlock _lblFindCount;
+        private Button _btnFindPrev;
+        private Button _btnFindNext;
+        private Button _btnFindClose;
+        private Button _btnFindCode;
+        private List<TextFindMatch> _activeFindMatches = new List<TextFindMatch>();
+        private int _currentFindIndex = -1;
 
         // Barra de Progresso Principal e Status
         private Border _scanProgressBorder;
@@ -893,6 +915,8 @@ namespace DatasulCompileGen.UI
             codeHeaderGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             codeHeaderGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
             codeHeaderGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            codeHeaderGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            codeHeaderGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
             StackPanel fileLabelStack = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
             fileLabelStack.Children.Add(CreateSvgIcon(SvgCode, Color.FromRgb(56, 189, 248), 15));
@@ -931,10 +955,15 @@ namespace DatasulCompileGen.UI
             Grid.SetColumn(lineBadge, 1);
             codeHeaderGrid.Children.Add(lineBadge);
 
+            _btnFindCode = CreateSmallSecondaryButton("Localizar (Ctrl+F)");
+            _btnFindCode.Click += (s, e) => OpenOrFocusEditorFind();
+            Grid.SetColumn(_btnFindCode, 3);
+            codeHeaderGrid.Children.Add(_btnFindCode);
+
             _btnOpenFolder = CreateSmallSecondaryButton("Abrir na Pasta");
             _btnOpenFolder.IsEnabled = false;
             _btnOpenFolder.Click += OnOpenFolderClick;
-            Grid.SetColumn(_btnOpenFolder, 3);
+            Grid.SetColumn(_btnOpenFolder, 5);
             codeHeaderGrid.Children.Add(_btnOpenFolder);
 
             codeHeader.Child = codeHeaderGrid;
@@ -960,6 +989,9 @@ namespace DatasulCompileGen.UI
                 FontSize = 13,
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                IsInactiveSelectionHighlightEnabled = true,
+                SelectionBrush = new SolidColorBrush(Color.FromRgb(245, 158, 11)),
+                SelectionOpacity = 0.85,
                 Document = new FlowDocument { PageWidth = 2200 }
             };
             codeBoxBorder.Child = _rtbCodePreview;
@@ -1088,6 +1120,9 @@ namespace DatasulCompileGen.UI
                 FontSize = 13,
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                IsInactiveSelectionHighlightEnabled = true,
+                SelectionBrush = new SolidColorBrush(Color.FromRgb(245, 158, 11)),
+                SelectionOpacity = 0.85,
                 Document = new FlowDocument { PageWidth = 2200 }
             };
             scriptBoxBorder.Child = _rtbScriptPreview;
@@ -1098,6 +1133,11 @@ namespace DatasulCompileGen.UI
             Grid.SetRow(_viewScriptPreview, 2);
             grid.Children.Add(_viewCodePreview);
             grid.Children.Add(_viewScriptPreview);
+
+            _findBarBorder = BuildFindBar();
+            Grid.SetRow(_findBarBorder, 2);
+            Panel.SetZIndex(_findBarBorder, 100);
+            grid.Children.Add(_findBarBorder);
 
             card.Child = grid;
             return card;
@@ -1582,12 +1622,24 @@ namespace DatasulCompileGen.UI
             _viewOccurrences.Visibility = showCompilables ? Visibility.Collapsed : Visibility.Visible;
         }
 
-        private void SwitchRightTab(bool showCodePreview)
+        public void SwitchRightTab(bool showCodePreview)
         {
             ApplySegmentedTabVisual(_btnTabCodePreview, showCodePreview);
             ApplySegmentedTabVisual(_btnTabScriptPreview, !showCodePreview);
             _viewCodePreview.Visibility = showCodePreview ? Visibility.Visible : Visibility.Collapsed;
             _viewScriptPreview.Visibility = showCodePreview ? Visibility.Collapsed : Visibility.Visible;
+
+            if (_findBarBorder != null)
+            {
+                _findBarBorder.Margin = showCodePreview
+                    ? new Thickness(0, 48, 20, 0)
+                    : new Thickness(0, 94, 20, 0);
+
+                if (_findBarBorder.Visibility == Visibility.Visible && _txtEditorFind != null && !string.IsNullOrEmpty(_txtEditorFind.Text))
+                {
+                    ExecuteEditorFind(false);
+                }
+            }
         }
 
         // ── Eventos de Busca e Ações ───────────────────────────────────────────────
@@ -2308,6 +2360,7 @@ namespace DatasulCompileGen.UI
 
                 Run gutterRun = new Run(string.Format("{0,5} │ ", lineNo))
                 {
+                    Tag = "GUTTER",
                     Foreground = isTargetLine
                         ? new SolidColorBrush(Color.FromRgb(56, 189, 248))
                         : BrushTextMuted,
@@ -2333,6 +2386,11 @@ namespace DatasulCompileGen.UI
             if (targetRunToBringIntoView != null)
             {
                 targetRunToBringIntoView.BringIntoView();
+            }
+
+            if (_findBarBorder != null && _findBarBorder.Visibility == Visibility.Visible && _txtEditorFind != null && !string.IsNullOrEmpty(_txtEditorFind.Text))
+            {
+                ExecuteEditorFind(false);
             }
         }
 
@@ -2427,6 +2485,11 @@ namespace DatasulCompileGen.UI
             CompileScriptOptions opts = BuildCompileScriptOptions(string.Empty);
             _cachedScriptPreviewText = _scriptGenerator.GenerateScript(_currentReport.CompilableResults, opts);
             SetRichTextPlain(_rtbScriptPreview, _cachedScriptPreviewText);
+
+            if (_findBarBorder != null && _findBarBorder.Visibility == Visibility.Visible && _txtEditorFind != null && !string.IsNullOrEmpty(_txtEditorFind.Text))
+            {
+                ExecuteEditorFind(false);
+            }
         }
 
         private static void SetRichTextPlain(RichTextBox rtb, string text)
@@ -2438,12 +2501,23 @@ namespace DatasulCompileGen.UI
                 FontSize = 13,
                 PagePadding = new Thickness(8)
             };
-            Paragraph p = new Paragraph(new Run(text ?? string.Empty))
+            string safeText = text ?? string.Empty;
+            string[] lines = ProgressCodeAnalyzer.SplitLines(safeText);
+            if (lines.Length == 0)
             {
-                Margin = new Thickness(0),
-                LineHeight = 20
-            };
-            doc.Blocks.Add(p);
+                lines = new string[] { string.Empty };
+            }
+
+            foreach (string line in lines)
+            {
+                Run r = new Run(line);
+                Paragraph p = new Paragraph(r)
+                {
+                    Margin = new Thickness(0),
+                    LineHeight = 20
+                };
+                doc.Blocks.Add(p);
+            }
             rtb.Document = doc;
         }
 
@@ -2875,6 +2949,450 @@ namespace DatasulCompileGen.UI
             ApplySegmentedOptionVisual(_btnPathAbsolute, index == 1);
             RefreshScriptPreview();
             SaveCurrentStateToCache();
+        }
+
+        // ── Atalhos Globais de Teclado (Ctrl+F, F3, Esc) ───────────────────────────
+
+        protected override void OnPreviewKeyDown(KeyEventArgs e)
+        {
+            base.OnPreviewKeyDown(e);
+
+            if (e.Key == Key.F && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                OpenOrFocusEditorFind();
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.F3)
+            {
+                if (_findBarBorder != null && _findBarBorder.Visibility == Visibility.Visible)
+                {
+                    if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+                    {
+                        NavigateEditorFindPrevious();
+                    }
+                    else
+                    {
+                        NavigateEditorFindNext();
+                    }
+                    e.Handled = true;
+                    return;
+                }
+            }
+
+            if (e.Key == Key.Escape && _findBarBorder != null && _findBarBorder.Visibility == Visibility.Visible)
+            {
+                CloseEditorFind();
+                e.Handled = true;
+                return;
+            }
+        }
+
+        // ── Barra Flutuante de Localização no Editor (Ctrl+F) ─────────────────────
+
+        private Border BuildFindBar()
+        {
+            Border bar = new Border
+            {
+                Background = new SolidColorBrush(Color.FromRgb(30, 41, 59)),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(51, 65, 85)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(6, 4, 6, 4),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(0, 48, 20, 0),
+                Visibility = Visibility.Collapsed,
+                Effect = new DropShadowEffect
+                {
+                    Color = Colors.Black,
+                    Direction = 270,
+                    ShadowDepth = 3,
+                    Opacity = 0.45,
+                    BlurRadius = 8
+                }
+            };
+
+            StackPanel stack = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            stack.Children.Add(CreateSvgIcon(SvgSearch, Color.FromRgb(148, 163, 184), 13));
+
+            _txtEditorFind = new TextBox
+            {
+                Width = 200,
+                Height = 26,
+                Background = BrushBgCanvas,
+                Foreground = BrushTextPrimary,
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 12,
+                Padding = new Thickness(6, 2, 6, 2),
+                Margin = new Thickness(6, 0, 6, 0),
+                VerticalContentAlignment = VerticalAlignment.Center
+            };
+            _txtEditorFind.TextChanged += (s, e) => ExecuteEditorFind(true);
+            _txtEditorFind.PreviewKeyDown += OnTxtEditorFindPreviewKeyDown;
+            stack.Children.Add(_txtEditorFind);
+
+            _lblFindCount = new TextBlock
+            {
+                Text = string.Empty,
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 11,
+                Foreground = BrushTextMuted,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(4, 0, 8, 0),
+                MinWidth = 55,
+                TextAlignment = TextAlignment.Center
+            };
+            stack.Children.Add(_lblFindCount);
+
+            _btnFindPrev = CreateFindNavButton("▲", "Ocorrência anterior (Shift+Enter / Shift+F3)");
+            _btnFindPrev.Click += (s, e) => NavigateEditorFindPrevious();
+            stack.Children.Add(_btnFindPrev);
+
+            _btnFindNext = CreateFindNavButton("▼", "Próxima ocorrência (Enter / F3)");
+            _btnFindNext.Click += (s, e) => NavigateEditorFindNext();
+            stack.Children.Add(_btnFindNext);
+
+            _btnFindClose = CreateFindNavButton("✕", "Fechar (Esc)");
+            _btnFindClose.Margin = new Thickness(4, 0, 0, 0);
+            _btnFindClose.Click += (s, e) => CloseEditorFind();
+            stack.Children.Add(_btnFindClose);
+
+            bar.Child = stack;
+            return bar;
+        }
+
+        private static Button CreateFindNavButton(string text, string toolTip)
+        {
+            Button btn = new Button
+            {
+                Content = text,
+                Width = 24,
+                Height = 24,
+                Background = Brushes.Transparent,
+                Foreground = new SolidColorBrush(Color.FromRgb(203, 213, 225)),
+                BorderThickness = new Thickness(0),
+                Cursor = Cursors.Hand,
+                ToolTip = toolTip,
+                FontSize = 11,
+                FontWeight = FontWeights.Bold,
+                Padding = new Thickness(0),
+                Margin = new Thickness(2, 0, 2, 0)
+            };
+
+            btn.MouseEnter += (s, e) =>
+            {
+                btn.Background = new SolidColorBrush(Color.FromRgb(51, 65, 85));
+                btn.Foreground = Brushes.White;
+            };
+            btn.MouseLeave += (s, e) =>
+            {
+                btn.Background = Brushes.Transparent;
+                btn.Foreground = new SolidColorBrush(Color.FromRgb(203, 213, 225));
+            };
+
+            return btn;
+        }
+
+        private void OnTxtEditorFindPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+                {
+                    NavigateEditorFindPrevious();
+                }
+                else
+                {
+                    NavigateEditorFindNext();
+                }
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Escape)
+            {
+                CloseEditorFind();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.F3)
+            {
+                if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+                {
+                    NavigateEditorFindPrevious();
+                }
+                else
+                {
+                    NavigateEditorFindNext();
+                }
+                e.Handled = true;
+            }
+        }
+
+        private RichTextBox GetActivePreviewRichTextBox()
+        {
+            if (_viewCodePreview != null && _viewCodePreview.Visibility == Visibility.Visible)
+            {
+                return _rtbCodePreview;
+            }
+            if (_viewScriptPreview != null && _viewScriptPreview.Visibility == Visibility.Visible)
+            {
+                return _rtbScriptPreview;
+            }
+            return _rtbCodePreview;
+        }
+
+        public void OpenOrFocusEditorFind()
+        {
+            if (_findBarBorder == null) return;
+
+            bool isCodeTab = _viewCodePreview != null && _viewCodePreview.Visibility == Visibility.Visible;
+            _findBarBorder.Margin = isCodeTab
+                ? new Thickness(0, 48, 20, 0)
+                : new Thickness(0, 94, 20, 0);
+
+            _findBarBorder.Visibility = Visibility.Visible;
+
+            RichTextBox rtb = GetActivePreviewRichTextBox();
+            if (rtb != null && !string.IsNullOrEmpty(rtb.Selection.Text) && !rtb.Selection.Text.Contains("\n") && !rtb.Selection.Text.Contains("\r"))
+            {
+                _txtEditorFind.Text = rtb.Selection.Text;
+            }
+
+            _txtEditorFind.Focus();
+            _txtEditorFind.SelectAll();
+            ExecuteEditorFind(true);
+        }
+
+        public void CloseEditorFind()
+        {
+            if (_findBarBorder != null)
+            {
+                _findBarBorder.Visibility = Visibility.Collapsed;
+            }
+            RichTextBox rtb = GetActivePreviewRichTextBox();
+            if (rtb != null)
+            {
+                rtb.Focus();
+            }
+        }
+
+        private void ExecuteEditorFind(bool selectFirst)
+        {
+            _activeFindMatches.Clear();
+            string query = _txtEditorFind != null ? _txtEditorFind.Text : string.Empty;
+
+            RichTextBox rtb = GetActivePreviewRichTextBox();
+            if (rtb == null || rtb.Document == null || string.IsNullOrEmpty(query))
+            {
+                _currentFindIndex = -1;
+                UpdateFindCounterUI();
+                return;
+            }
+
+            CollectMatchesFromDocument(rtb.Document, query);
+
+            if (_activeFindMatches.Count == 0)
+            {
+                _currentFindIndex = -1;
+                UpdateFindCounterUI();
+                return;
+            }
+
+            if (selectFirst || _currentFindIndex < 0 || _currentFindIndex >= _activeFindMatches.Count)
+            {
+                _currentFindIndex = 0;
+            }
+
+            UpdateFindCounterUI();
+            HighlightAndNavigateCurrentMatch();
+        }
+
+        private void CollectMatchesFromDocument(FlowDocument doc, string query)
+        {
+            if (doc == null || string.IsNullOrEmpty(query)) return;
+
+            foreach (Block block in doc.Blocks)
+            {
+                Paragraph p = block as Paragraph;
+                if (p == null) continue;
+
+                foreach (Inline inline in p.Inlines)
+                {
+                    Run run = inline as Run;
+                    if (run == null) continue;
+
+                    // Ignorar runs marcados como numeracao de linhas da gutter
+                    if ("GUTTER".Equals(run.Tag as string, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    string text = run.Text;
+                    if (string.IsNullOrEmpty(text)) continue;
+
+                    int idx = 0;
+                    while (idx < text.Length)
+                    {
+                        int found = text.IndexOf(query, idx, StringComparison.OrdinalIgnoreCase);
+                        if (found < 0) break;
+
+                        try
+                        {
+                            TextPointer startPtr = run.ContentStart.GetPositionAtOffset(found);
+                            TextPointer endPtr = run.ContentStart.GetPositionAtOffset(found + query.Length);
+                            if (startPtr != null && endPtr != null)
+                            {
+                                _activeFindMatches.Add(new TextFindMatch
+                                {
+                                    Start = startPtr,
+                                    End = endPtr,
+                                    Paragraph = p,
+                                    OwnerRun = run,
+                                    MatchIndex = _activeFindMatches.Count
+                                });
+                            }
+                        }
+                        catch (Exception)
+                        {
+                        }
+
+                        idx = found + Math.Max(1, query.Length);
+                    }
+                }
+            }
+        }
+
+        private void HighlightAndNavigateCurrentMatch()
+        {
+            if (_activeFindMatches == null || _activeFindMatches.Count == 0 || _currentFindIndex < 0 || _currentFindIndex >= _activeFindMatches.Count)
+            {
+                return;
+            }
+
+            TextFindMatch match = _activeFindMatches[_currentFindIndex];
+            RichTextBox rtb = GetActivePreviewRichTextBox();
+            if (rtb == null) return;
+
+            try
+            {
+                rtb.Selection.Select(match.Start, match.End);
+                if (match.OwnerRun != null)
+                {
+                    match.OwnerRun.BringIntoView();
+                }
+                else if (match.Paragraph != null)
+                {
+                    match.Paragraph.BringIntoView();
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        private void NavigateEditorFindNext()
+        {
+            if (_activeFindMatches == null || _activeFindMatches.Count == 0)
+            {
+                return;
+            }
+
+            _currentFindIndex = (_currentFindIndex + 1) % _activeFindMatches.Count;
+            UpdateFindCounterUI();
+            HighlightAndNavigateCurrentMatch();
+        }
+
+        private void NavigateEditorFindPrevious()
+        {
+            if (_activeFindMatches == null || _activeFindMatches.Count == 0)
+            {
+                return;
+            }
+
+            _currentFindIndex--;
+            if (_currentFindIndex < 0)
+            {
+                _currentFindIndex = _activeFindMatches.Count - 1;
+            }
+            UpdateFindCounterUI();
+            HighlightAndNavigateCurrentMatch();
+        }
+
+        private void UpdateFindCounterUI()
+        {
+            if (_lblFindCount == null) return;
+
+            string query = _txtEditorFind != null ? _txtEditorFind.Text : string.Empty;
+            if (string.IsNullOrEmpty(query))
+            {
+                _lblFindCount.Text = string.Empty;
+                _lblFindCount.Foreground = BrushTextMuted;
+                if (_btnFindPrev != null) _btnFindPrev.IsEnabled = false;
+                if (_btnFindNext != null) _btnFindNext.IsEnabled = false;
+                return;
+            }
+
+            if (_activeFindMatches == null || _activeFindMatches.Count == 0)
+            {
+                _lblFindCount.Text = "0 de 0";
+                _lblFindCount.Foreground = new SolidColorBrush(Color.FromRgb(248, 113, 113));
+                if (_btnFindPrev != null) _btnFindPrev.IsEnabled = false;
+                if (_btnFindNext != null) _btnFindNext.IsEnabled = false;
+            }
+            else
+            {
+                _lblFindCount.Text = string.Format("{0} de {1}", _currentFindIndex + 1, _activeFindMatches.Count);
+                _lblFindCount.Foreground = new SolidColorBrush(Color.FromRgb(56, 189, 248));
+                if (_btnFindPrev != null) _btnFindPrev.IsEnabled = true;
+                if (_btnFindNext != null) _btnFindNext.IsEnabled = true;
+            }
+        }
+
+        // ── Métodos Públicos de Localização no Editor (Ctrl+F) ─────────────────
+
+        public void OpenEditorFind()
+        {
+            OpenOrFocusEditorFind();
+        }
+
+        public void SetEditorFindText(string text)
+        {
+            if (_txtEditorFind != null)
+            {
+                _txtEditorFind.Text = text;
+            }
+        }
+
+        public int GetEditorFindMatchesCount()
+        {
+            return _activeFindMatches != null ? _activeFindMatches.Count : 0;
+        }
+
+        public int GetCurrentFindIndex()
+        {
+            return _currentFindIndex;
+        }
+
+        public void TriggerFindNext()
+        {
+            NavigateEditorFindNext();
+        }
+
+        public void TriggerFindPrevious()
+        {
+            NavigateEditorFindPrevious();
+        }
+
+        public bool IsEditorFindVisible()
+        {
+            return _findBarBorder != null && _findBarBorder.Visibility == Visibility.Visible;
         }
     }
 }

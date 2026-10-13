@@ -82,6 +82,43 @@ namespace DatasulCompileGen.Tests
                             "Preview no Modo Puro Relativo deveria conter COMPILE esp/es0010.p SAVE.");
                         Assert(previewPureMode.Contains("COMPILE esp/es0020.w SAVE."),
                             "Preview no Modo Puro Relativo deveria conter COMPILE esp/es0020.w SAVE.");
+
+                        // Verificacao do Localizador In-Editor (Ctrl+F) na visualizacao de codigo
+                        Assert(!form.IsEditorFindVisible(), "A barra de localizacao deve iniciar oculta.");
+                        form.OpenEditorFind();
+                        Assert(form.IsEditorFindVisible(), "A barra de localizacao deve ficar visivel ao abrir.");
+
+                        form.SetEditorFindText("es-teste-123");
+                        Assert(form.GetEditorFindMatchesCount() == 1,
+                            "Deveria encontrar 1 ocorrencia de 'es-teste-123' no editor de codigo ativo, mas encontrou " + form.GetEditorFindMatchesCount());
+                        Assert(form.GetCurrentFindIndex() == 0,
+                            "Indice da ocorrencia atual deveria ser 0, mas foi " + form.GetCurrentFindIndex());
+
+                        form.SetEditorFindText("termo-inexistente-xyz");
+                        Assert(form.GetEditorFindMatchesCount() == 0,
+                            "Nao deveria encontrar nenhuma ocorrencia para termo inexistente.");
+
+                        form.CloseEditorFind();
+                        Assert(!form.IsEditorFindVisible(), "A barra de localizacao deve ficar oculta apos fechar.");
+
+                        // Verificacao do Localizador In-Editor (Ctrl+F) na aba de script .p
+                        form.SwitchRightTab(false);
+                        form.OpenEditorFind();
+                        Assert(form.IsEditorFindVisible(), "A barra de localizacao deve ficar visivel na aba de script.");
+
+                        form.SetEditorFindText("COMPILE");
+                        Assert(form.GetEditorFindMatchesCount() >= 2,
+                            "Deveria encontrar ao menos 2 ocorrencias de COMPILE no script .p gerado, mas encontrou " + form.GetEditorFindMatchesCount());
+                        Assert(form.GetCurrentFindIndex() == 0, "O indice inicial da busca deve ser 0.");
+
+                        form.TriggerFindNext();
+                        Assert(form.GetCurrentFindIndex() == 1, "Apos TriggerFindNext, o indice deveria ser 1.");
+
+                        form.TriggerFindPrevious();
+                        Assert(form.GetCurrentFindIndex() == 0, "Apos TriggerFindPrevious, o indice deveria voltar a 0.");
+
+                        form.CloseEditorFind();
+                        Assert(!form.IsEditorFindVisible(), "A barra de localizacao deve ficar oculta apos fechar na aba de script.");
                     }
                     finally
                     {
@@ -91,6 +128,7 @@ namespace DatasulCompileGen.Tests
                     Console.WriteLine("  - Renderizacao dos Cards de Programas Compilaveis + Badges (DIRETO / VIA INCLUDE .I): OK");
                     Console.WriteLine("  - Renderizacao da Arvore de Ocorrencias Estilo VS Code: OK");
                     Console.WriteLine("  - Seletores Segmentados (Pills) e Preview Ao Vivo do Script .p: OK");
+                    Console.WriteLine("  - Localizador In-Editor (Ctrl+F), Destaques e Navegacao Proxima/Anterior: OK");
                     Console.WriteLine("PHASE 5 WPF UI/UX PRO MAX VERIFICATION PASSED");
                     exitCode = 0;
                 }
