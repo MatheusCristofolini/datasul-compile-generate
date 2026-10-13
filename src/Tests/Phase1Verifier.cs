@@ -84,6 +84,41 @@ namespace DatasulCompileGen.Tests
                     Console.WriteLine("    [x] " + comp.RelativePath + " (" + origin + ")");
                 }
 
+                // Cenário 3: Extensões derivadas (.p1, .i1, .w1, .cls1, .p_old, .p.bak, etc.) e exclusão de .pdf/.ini
+                string espDir = Path.Combine(tempDir, "esp");
+                string incDir = Path.Combine(tempDir, "include");
+                string clsDir = Path.Combine(tempDir, "cls");
+
+                File.WriteAllText(Path.Combine(espDir, "es0010.p1"), "FIND FIRST es-teste-123 NO-LOCK.\r\n", Encoding.UTF8);
+                File.WriteAllText(Path.Combine(espDir, "es0010.p_old"), "FIND FIRST es-teste-123 NO-LOCK.\r\n", Encoding.UTF8);
+                File.WriteAllText(Path.Combine(espDir, "es0010.p.bak"), "FIND FIRST es-teste-123 NO-LOCK.\r\n", Encoding.UTF8);
+                File.WriteAllText(Path.Combine(espDir, "es0020.w1"), "FIND FIRST es-teste-123 NO-LOCK.\r\n", Encoding.UTF8);
+                File.WriteAllText(Path.Combine(clsDir, "CalculoImposto.cls1"), "FIND FIRST es-teste-123 NO-LOCK.\r\n", Encoding.UTF8);
+                File.WriteAllText(Path.Combine(incDir, "backup.i1"), "FIND FIRST es-teste-123 NO-LOCK.\r\n", Encoding.UTF8);
+                File.WriteAllText(Path.Combine(incDir, "backup.i.bak"), "FIND FIRST es-teste-123 NO-LOCK.\r\n", Encoding.UTF8);
+                File.WriteAllText(Path.Combine(espDir, "manual.pdf"), "es-teste-123 em arquivo pdf\r\n", Encoding.UTF8);
+                File.WriteAllText(Path.Combine(espDir, "config.ini"), "es-teste-123 em arquivo ini\r\n", Encoding.UTF8);
+
+                SearchOptions opts3 = new SearchOptions();
+                opts3.RootDirectory = tempDir;
+                opts3.SearchTerm = "es-teste-123";
+                opts3.IgnoreComments = true;
+                opts3.TrackIncludes = false;
+
+                SearchReport report3 = engine.ExecuteSearch(opts3, null, CancellationToken.None);
+
+                Assert(report3.CompilableResults.Any(r => r.RelativePath == "esp/es0010.p1"), "es0010.p1 deve ser detectado e compilavel.");
+                Assert(report3.CompilableResults.Any(r => r.RelativePath == "esp/es0010.p_old"), "es0010.p_old deve ser detectado e compilavel.");
+                Assert(report3.CompilableResults.Any(r => r.RelativePath == "esp/es0010.p.bak"), "es0010.p.bak deve ser detectado e compilavel.");
+                Assert(report3.CompilableResults.Any(r => r.RelativePath == "esp/es0020.w1"), "es0020.w1 deve ser detectado e compilavel.");
+                Assert(report3.CompilableResults.Any(r => r.RelativePath == "cls/CalculoImposto.cls1"), "CalculoImposto.cls1 deve ser detectado e compilavel.");
+                Assert(report3.AllResults.Any(r => r.RelativePath == "include/backup.i1" && !r.IsCompilable), "backup.i1 deve ser detectado como include.");
+                Assert(report3.AllResults.Any(r => r.RelativePath == "include/backup.i.bak" && !r.IsCompilable), "backup.i.bak deve ser detectado como include.");
+                Assert(!report3.AllResults.Any(r => r.RelativePath == "esp/manual.pdf"), "manual.pdf NAO deve entrar na busca.");
+                Assert(!report3.AllResults.Any(r => r.RelativePath == "esp/config.ini"), "config.ini NAO deve entrar na busca.");
+
+                Console.WriteLine("  - Suporte a .p1, .i1, .w1, .cls1, .p_old, .p.bak e exclusao de .pdf/.ini: OK");
+
                 Console.WriteLine("PHASE 1 VERIFICATION PASSED");
                 return 0;
             }

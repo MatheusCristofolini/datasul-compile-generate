@@ -2089,17 +2089,17 @@ namespace DatasulCompileGen.UI
             Color bg = Color.FromRgb(30, 27, 75);
             Color fg = Color.FromRgb(165, 180, 252);
 
-            if (label == ".W")
+            if (label.StartsWith(".W"))
             {
                 bg = Color.FromRgb(59, 7, 100);
                 fg = Color.FromRgb(216, 180, 254);
             }
-            else if (label == ".CLS")
+            else if (label.StartsWith(".CLS"))
             {
                 bg = Color.FromRgb(69, 26, 3);
                 fg = Color.FromRgb(252, 211, 77);
             }
-            else if (label == ".I")
+            else if (label.StartsWith(".I"))
             {
                 bg = Color.FromRgb(67, 20, 7);
                 fg = Color.FromRgb(253, 186, 116);

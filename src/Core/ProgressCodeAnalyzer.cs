@@ -329,7 +329,145 @@ namespace DatasulCompileGen.Core
 
         private static bool EndsWithIncludeExtension(string token)
         {
-            return !string.IsNullOrEmpty(token) && token.EndsWith(".i", StringComparison.OrdinalIgnoreCase);
+            return IsIncludeFile(token);
+        }
+
+        private static readonly HashSet<string> ExcludedNonProgressExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".pdf", ".pkg", ".ppt", ".pptx", ".pub", ".pages",
+            ".png", ".psd", ".pic", ".pict",
+            ".ico", ".img", ".iso", ".icns",
+            ".wav", ".wasm", ".webp", ".woff", ".woff2", ".wma", ".wmv",
+            ".ini", ".inf", ".info", ".properties", ".proto",
+            ".py", ".pyc", ".pyd", ".pl", ".php", ".ps1", ".pem", ".p12", ".pfx",
+            ".class", ".clj",
+            ".win"
+        };
+
+        public static bool IsCompilableFile(string filePath, IEnumerable<string> compilableExtensions = null)
+        {
+            if (string.IsNullOrEmpty(filePath)) return false;
+
+            string ext = SafeGetExtension(filePath);
+            string extLower = (ext ?? string.Empty).ToLowerInvariant();
+            if (!string.IsNullOrEmpty(extLower) && ExcludedNonProgressExtensions.Contains(extLower))
+            {
+                return false;
+            }
+
+            if (compilableExtensions != null)
+            {
+                foreach (string compExt in compilableExtensions)
+                {
+                    if (string.IsNullOrWhiteSpace(compExt)) continue;
+                    string norm = compExt.Trim();
+                    if (!norm.StartsWith(".")) norm = "." + norm;
+
+                    if (norm.Equals(ext, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+
+                    string normLower = norm.ToLowerInvariant();
+                    if (normLower == ".p" || normLower == ".w" || normLower == ".cls")
+                    {
+                        if (MatchesBaseDerivative(filePath, extLower, normLower))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return MatchesBaseDerivative(filePath, extLower, ".p")
+                || MatchesBaseDerivative(filePath, extLower, ".w")
+                || MatchesBaseDerivative(filePath, extLower, ".cls");
+        }
+
+        public static bool IsIncludeFile(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath)) return false;
+
+            string ext = SafeGetExtension(filePath);
+            string extLower = (ext ?? string.Empty).ToLowerInvariant();
+            if (!string.IsNullOrEmpty(extLower) && ExcludedNonProgressExtensions.Contains(extLower))
+            {
+                return false;
+            }
+
+            return MatchesBaseDerivative(filePath, extLower, ".i");
+        }
+
+        public static bool MatchesProgressFilter(string filePath, IEnumerable<string> allowedExtensions)
+        {
+            if (string.IsNullOrEmpty(filePath)) return false;
+
+            string ext = SafeGetExtension(filePath);
+            string extLower = (ext ?? string.Empty).ToLowerInvariant();
+            if (!string.IsNullOrEmpty(extLower) && ExcludedNonProgressExtensions.Contains(extLower))
+            {
+                return false;
+            }
+
+            if (allowedExtensions == null)
+            {
+                return IsCompilableFile(filePath) || IsIncludeFile(filePath);
+            }
+
+            foreach (string rawExt in allowedExtensions)
+            {
+                if (string.IsNullOrWhiteSpace(rawExt)) continue;
+                string norm = rawExt.Trim();
+                if (!norm.StartsWith(".")) norm = "." + norm;
+
+                if (norm.Equals(ext, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                string normLower = norm.ToLowerInvariant();
+                if (normLower == ".p" || normLower == ".w" || normLower == ".cls")
+                {
+                    if (MatchesBaseDerivative(filePath, extLower, normLower))
+                    {
+                        return true;
+                    }
+                }
+                else if (normLower == ".i")
+                {
+                    if (MatchesBaseDerivative(filePath, extLower, normLower))
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    if (extLower.StartsWith(normLower))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool MatchesBaseDerivative(string filePath, string extLower, string baseExtLower)
+        {
+            if (string.IsNullOrEmpty(baseExtLower)) return false;
+
+            if (!string.IsNullOrEmpty(extLower) && extLower.StartsWith(baseExtLower))
+            {
+                return true;
+            }
+
+            string fileNameLower = SafeGetFileName(filePath).ToLowerInvariant();
+            if (fileNameLower.Contains(baseExtLower + "."))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public static string NormalizePath(string path)

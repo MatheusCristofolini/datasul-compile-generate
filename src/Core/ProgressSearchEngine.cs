@@ -83,6 +83,14 @@ namespace DatasulCompileGen.Core
                 }
             }
 
+            if (allowedExtensions.Count == 0)
+            {
+                allowedExtensions.Add(".p");
+                allowedExtensions.Add(".w");
+                allowedExtensions.Add(".i");
+                allowedExtensions.Add(".cls");
+            }
+
             List<string> candidateFiles = EnumerateCandidateFiles(rootFull, allowedExtensions, progress, cancellationToken);
             int totalFiles = candidateFiles.Count;
 
@@ -145,13 +153,13 @@ namespace DatasulCompileGen.Core
                     entry.RelativePath = relPath;
                     entry.FileName = fileName;
                     entry.Extension = ext;
-                    entry.IsCompilable = options.CompilableExtensions != null && options.CompilableExtensions.Contains(ext);
+                    entry.IsCompilable = ProgressCodeAnalyzer.IsCompilableFile(filePath, options.CompilableExtensions);
                     entry.DirectMatches = directMatches;
                     entry.OutgoingIncludes = outgoingIncludes;
 
                     scannedEntries.Add(entry);
 
-                    if (ext.Equals(".i", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(entry.FileName))
+                    if (ProgressCodeAnalyzer.IsIncludeFile(filePath) && !string.IsNullOrEmpty(entry.FileName))
                     {
                         List<ScannedFileEntry> listByName;
                         if (!includeFilesByName.TryGetValue(entry.FileName, out listByName))
@@ -208,7 +216,7 @@ namespace DatasulCompileGen.Core
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    if (!startInclude.Extension.Equals(".i", StringComparison.OrdinalIgnoreCase))
+                    if (!ProgressCodeAnalyzer.IsIncludeFile(startInclude.FilePath))
                     {
                         continue;
                     }
@@ -517,8 +525,7 @@ namespace DatasulCompileGen.Core
 
                 foreach (string file in dirFiles)
                 {
-                    string ext = ProgressCodeAnalyzer.SafeGetExtension(file);
-                    if (!string.IsNullOrEmpty(ext) && allowedExtensions.Contains(ext))
+                    if (ProgressCodeAnalyzer.MatchesProgressFilter(file, allowedExtensions))
                     {
                         files.Add(file);
                     }
