@@ -49,5 +49,5 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 ## Desenvolvido por
 
 **Macritec**  
-E-mail: [oficial.macritec@gmail.com](mailto:oficial.macritec@gmail.com)
+Para dicas ou correções, entre em contato pelo e-mail: [oficial.macritec@gmail.com](mailto:oficial.macritec@gmail.com)
 

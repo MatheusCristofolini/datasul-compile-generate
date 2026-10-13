@@ -441,12 +441,12 @@ namespace DatasulCompileGen.UI
 
             _lblFooterAttribution = new TextBlock
             {
-                Text = "Created by Macritec  •  oficial.macritec@gmail.com",
+                Text = "Created by Macritec  •  Para dicas ou correções: oficial.macritec@gmail.com",
                 FontSize = 11,
                 Foreground = BrushTextMuted,
                 Opacity = 0.65,
                 Cursor = Cursors.Hand,
-                ToolTip = "Clique para abrir detalhes do desenvolvedor e suporte"
+                ToolTip = "Para dicas ou correções entre em contato pelo e-mail: oficial.macritec@gmail.com (Clique para detalhes)"
             };
             _lblFooterAttribution.MouseEnter += (s, e) =>
             {
@@ -3509,7 +3509,7 @@ namespace DatasulCompileGen.UI
             StackPanel authorStack = new StackPanel();
 
             // Created by Macritec
-            StackPanel createdByRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
+            StackPanel createdByRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
             createdByRow.Children.Add(CreateSvgIcon(SvgCode, _isDarkMode ? Color.FromRgb(56, 189, 248) : Color.FromRgb(2, 132, 199), 14));
             TextBlock lblCreated = new TextBlock
             {
@@ -3523,6 +3523,16 @@ namespace DatasulCompileGen.UI
             createdByRow.Children.Add(lblCreated);
             authorStack.Children.Add(createdByRow);
 
+            // Mensagem de contato para dicas e correções
+            TextBlock lblContactIntro = new TextBlock
+            {
+                Text = "Para dicas ou correções, entre em contato pelo e-mail:",
+                FontSize = 12,
+                Foreground = BrushTextSecondary,
+                Margin = new Thickness(0, 0, 0, 6)
+            };
+            authorStack.Children.Add(lblContactIntro);
+
             // Email row
             StackPanel emailRow = new StackPanel { Orientation = Orientation.Horizontal };
             emailRow.Children.Add(CreateSvgIcon(SvgMail, _isDarkMode ? Color.FromRgb(148, 163, 184) : Color.FromRgb(100, 116, 139), 14));
@@ -3530,6 +3540,7 @@ namespace DatasulCompileGen.UI
             {
                 Text = "oficial.macritec@gmail.com",
                 FontSize = 12.5,
+                FontWeight = FontWeights.SemiBold,
                 Foreground = _isDarkMode ? new SolidColorBrush(Color.FromRgb(96, 165, 250)) : new SolidColorBrush(Color.FromRgb(37, 99, 235)),
                 Margin = new Thickness(8, 0, 0, 0),
                 Cursor = Cursors.Hand,

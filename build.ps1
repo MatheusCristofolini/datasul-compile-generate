@@ -44,6 +44,16 @@ if (Test-Path $iconPng) {
 
 Write-Host "Compilando executavel portatil WPF (UI/UX Pro Max) DatasulCompileGen.exe com icone incorporado..." -ForegroundColor Cyan
 
+if (Test-Path $outRootExe) {
+    try {
+        Remove-Item $outRootExe -Force -ErrorAction Stop
+    } catch {
+        $oldBackup = "$outRootExe.old"
+        if (Test-Path $oldBackup) { try { Remove-Item $oldBackup -Force -ErrorAction SilentlyContinue } catch {} }
+        Move-Item $outRootExe $oldBackup -Force -ErrorAction SilentlyContinue
+    }
+}
+
 & $cscPath /nologo /target:winexe /optimize+ /platform:anycpu `
     "/out:$outRootExe" `
     /r:System.dll `
