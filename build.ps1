@@ -31,7 +31,18 @@ $sources = @(
     (Join-Path $rootDir "src\Program.cs")
 )
 
-Write-Host "Compilando executavel portatil WPF (UI/UX Pro Max) DatasulCompileGen.exe..." -ForegroundColor Cyan
+$iconIco = Join-Path $rootDir "resources\app.ico"
+$iconPng = Join-Path $rootDir "resources\app.png"
+
+$resourceArgs = @()
+if (Test-Path $iconIco) {
+    $resourceArgs += "/win32icon:$iconIco"
+}
+if (Test-Path $iconPng) {
+    $resourceArgs += "/res:$iconPng,DatasulCompileGen.app.png"
+}
+
+Write-Host "Compilando executavel portatil WPF (UI/UX Pro Max) DatasulCompileGen.exe com icone incorporado..." -ForegroundColor Cyan
 
 & $cscPath /nologo /target:winexe /optimize+ /platform:anycpu `
     "/out:$outRootExe" `
@@ -43,6 +54,7 @@ Write-Host "Compilando executavel portatil WPF (UI/UX Pro Max) DatasulCompileGen
     "/r:$wpfDir\PresentationFramework.dll" `
     "/r:$wpfDir\PresentationCore.dll" `
     "/r:$wpfDir\WindowsBase.dll" `
+    $resourceArgs `
     $sources
 
 if ($LASTEXITCODE -ne 0) {

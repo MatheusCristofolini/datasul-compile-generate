@@ -14,6 +14,7 @@ using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Media.Effects;
+using System.Windows.Media.Imaging;
 using DatasulCompileGen.Core;
 using WinForms = System.Windows.Forms;
 
@@ -274,6 +275,7 @@ namespace DatasulCompileGen.UI
             Foreground = BrushTextPrimary;
             FontFamily = new FontFamily("Segoe UI");
             FontSize = 13;
+            ApplyApplicationIcon();
 
             Grid rootGrid = new Grid { Margin = new Thickness(16, 14, 16, 10) };
             rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 0: Header Titlebar
@@ -3394,5 +3396,67 @@ namespace DatasulCompileGen.UI
         {
             return _findBarBorder != null && _findBarBorder.Visibility == Visibility.Visible;
         }
+
+        // ── Ícone Visual da Aplicação (Taskbar e Janela) ─────────────────────────
+
+        private void ApplyApplicationIcon()
+        {
+            try
+            {
+                using (Stream stream = typeof(MainForm).Assembly.GetManifestResourceStream("DatasulCompileGen.app.png"))
+                {
+                    if (stream != null)
+                    {
+                        BitmapImage bi = new BitmapImage();
+                        bi.BeginInit();
+                        bi.StreamSource = stream;
+                        bi.CacheOption = BitmapCacheOption.OnLoad;
+                        bi.EndInit();
+                        bi.Freeze();
+                        this.Icon = bi;
+                        return;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            try
+            {
+                string exePath = Process.GetCurrentProcess().MainModule.FileName;
+                if (!string.IsNullOrEmpty(exePath) && File.Exists(exePath))
+                {
+                    using (System.Drawing.Icon appIcon = System.Drawing.Icon.ExtractAssociatedIcon(exePath))
+                    {
+                        if (appIcon != null)
+                        {
+                            using (System.Drawing.Bitmap bmp = appIcon.ToBitmap())
+                            {
+                                IntPtr hBitmap = bmp.GetHbitmap();
+                                try
+                                {
+                                    this.Icon = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
+                                        hBitmap,
+                                        IntPtr.Zero,
+                                        Int32Rect.Empty,
+                                        BitmapSizeOptions.FromEmptyOptions());
+                                }
+                                finally
+                                {
+                                    DeleteObject(hBitmap);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        [System.Runtime.InteropServices.DllImport("gdi32.dll", SetLastError = true)]
+        private static extern bool DeleteObject(IntPtr hObject);
     }
 }
