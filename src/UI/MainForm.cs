@@ -147,16 +147,13 @@ namespace DatasulCompileGen.UI
         private List<TextFindMatch> _activeFindMatches = new List<TextFindMatch>();
         private int _currentFindIndex = -1;
 
-        // Barra de Progresso Principal e Status
+        // Barra de Progresso Principal
         private Border _scanProgressBorder;
         private ProgressBar _mainProgressBar;
         private TextBlock _lblProgressTitle;
         private TextBlock _lblProgressCounter;
         private TextBlock _lblProgressPercent;
         private TextBlock _lblProgressCurrentFile;
-        private Ellipse _statusDot;
-        private TextBlock _lblStatus;
-        private ProgressBar _progressBar;
 
         // Serviços, Cache e Estado
         private readonly ProgressSearchEngine _searchEngine;
@@ -283,12 +280,11 @@ namespace DatasulCompileGen.UI
             FontSize = 13;
             ApplyApplicationIcon();
 
-            Grid rootGrid = new Grid { Margin = new Thickness(16, 14, 16, 10) };
+            Grid rootGrid = new Grid { Margin = new Thickness(16, 14, 16, 14) };
             rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 0: Header Titlebar
             rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 1: Search Command Panel
             rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 2: KPI Cards
             rootGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // 3: Split Workspace
-            rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 4: Status Bar
 
             // 0. Header Bar
             UIElement headerBar = BuildHeaderBar();
@@ -309,11 +305,6 @@ namespace DatasulCompileGen.UI
             UIElement workspace = BuildMainWorkspace();
             Grid.SetRow(workspace, 3);
             rootGrid.Children.Add(workspace);
-
-            // 4. Status Bar
-            UIElement statusBar = BuildStatusBar();
-            Grid.SetRow(statusBar, 4);
-            rootGrid.Children.Add(statusBar);
 
             Content = rootGrid;
             RefreshScriptPreview();
@@ -1187,73 +1178,7 @@ namespace DatasulCompileGen.UI
             return card;
         }
 
-        private UIElement BuildStatusBar()
-        {
-            Border bar = new Border
-            {
-                Background = BrushBgSurface,
-                BorderBrush = BrushBorderSubtle,
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(8),
-                Padding = new Thickness(12, 7, 12, 7),
-                Margin = new Thickness(0, 10, 0, 0)
-            };
 
-            Grid g = new Grid();
-            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            _statusDot = new Ellipse
-            {
-                Width = 8,
-                Height = 8,
-                Fill = BrushEmeraldHover,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0, 0, 8, 0)
-            };
-            Grid.SetColumn(_statusDot, 0);
-            g.Children.Add(_statusDot);
-
-            _lblStatus = new TextBlock
-            {
-                Text = "Pronto. Selecione o diretório de programas e informe o termo de busca (ex: es-teste-123).",
-                FontSize = 12,
-                Foreground = BrushTextSecondary,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(_lblStatus, 1);
-            g.Children.Add(_lblStatus);
-
-            _progressBar = new ProgressBar
-            {
-                Width = 180,
-                Height = 8,
-                Visibility = Visibility.Collapsed,
-                Margin = new Thickness(12, 0, 12, 0),
-                Background = BrushBgInput,
-                Foreground = BrushPrimaryBlueHover,
-                BorderThickness = new Thickness(0),
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(_progressBar, 2);
-            g.Children.Add(_progressBar);
-
-            TextBlock versionBadge = new TextBlock
-            {
-                Text = "UI/UX Pro Max • Portátil (.exe)",
-                FontSize = 11,
-                FontWeight = FontWeights.SemiBold,
-                Foreground = BrushTextMuted,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(versionBadge, 3);
-            g.Children.Add(versionBadge);
-
-            bar.Child = g;
-            return bar;
-        }
 
         // ── Construtores de Controles Estilizados (UI/UX Pro Max) ──────────────────
 
@@ -1769,7 +1694,6 @@ namespace DatasulCompileGen.UI
                 if (info.TotalFiles <= 0)
                 {
                     _mainProgressBar.IsIndeterminate = true;
-                    _progressBar.IsIndeterminate = true;
                     _lblProgressTitle.Text = "MAPEANDO DIRETÓRIOS PROGRESS...";
                     _lblProgressCounter.Text = string.Format("{0:N0} arquivos localizados", info.ProcessedFiles);
                     _lblProgressPercent.Text = "...";
@@ -1788,10 +1712,6 @@ namespace DatasulCompileGen.UI
                     _mainProgressBar.Maximum = info.TotalFiles;
                     _mainProgressBar.Value = safeProcessed;
 
-                    _progressBar.IsIndeterminate = false;
-                    _progressBar.Maximum = info.TotalFiles;
-                    _progressBar.Value = safeProcessed;
-
                     _lblProgressTitle.Text = safeProcessed >= info.TotalFiles
                         ? "RASTREANDO DEPENDÊNCIAS DE INCLUDES (.I)..."
                         : "VARRENDO PROGRAMAS PROGRESS 4GL / ABL...";
@@ -1804,8 +1724,6 @@ namespace DatasulCompileGen.UI
                     _lblKpiScanned.Text = safeProcessed.ToString("N0");
                     _lblKpiScannedSub.Text = string.Format("{0}% de {1:N0} arquivos", pct, info.TotalFiles);
                 }
-
-                _lblStatus.Text = info.PhaseMessage;
             });
 
             try
@@ -1818,7 +1736,6 @@ namespace DatasulCompileGen.UI
                 _mainProgressBar.IsIndeterminate = false;
                 _lblProgressTitle.Text = "VARREDURA CANCELADA PELO USUÁRIO";
                 _lblProgressCurrentFile.Text = "Operação interrompida.";
-                _lblStatus.Text = "Varredura cancelada pelo usuário.";
             }
             catch (Exception ex)
             {
@@ -1826,7 +1743,6 @@ namespace DatasulCompileGen.UI
                 _mainProgressBar.Foreground = BrushDanger;
                 _lblProgressTitle.Text = "ERRO DURANTE A VARREDURA";
                 _lblProgressCurrentFile.Text = ex.Message;
-                _lblStatus.Text = "Erro na busca: " + ex.Message;
                 MessageBox.Show(this, ex.Message, "Erro durante a varredura", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
@@ -1878,13 +1794,8 @@ namespace DatasulCompileGen.UI
             _btnBrowseDir.IsEnabled = !searching;
             if (_btnRecentDirs != null) _btnRecentDirs.IsEnabled = !searching;
             if (_btnRecentTerms != null) _btnRecentTerms.IsEnabled = !searching;
-            _progressBar.Visibility = searching ? Visibility.Visible : Visibility.Collapsed;
-            _statusDot.Fill = searching ? BrushBorderFocus : BrushEmeraldHover;
             if (searching)
             {
-                _progressBar.IsIndeterminate = true;
-                _progressBar.Value = 0;
-
                 _scanProgressBorder.BorderBrush = BrushBorderFocus;
                 _mainProgressBar.Foreground = BrushBorderFocus;
                 _mainProgressBar.IsIndeterminate = true;
@@ -1938,13 +1849,6 @@ namespace DatasulCompileGen.UI
             _lblProgressCurrentFile.Text = string.Format(
                 "Resultado para '{0}': {1} programas compiláveis (.p/.w/.cls) e {2} includes (.i) impactados.",
                 report.Options.SearchTerm,
-                totalCompilables,
-                totalIncludes);
-
-            _lblStatus.Text = string.Format(
-                "Varredura concluída em {0} ms • {1} arquivos analisados • {2} programas compiláveis • {3} includes (.i)",
-                report.ElapsedMilliseconds,
-                report.TotalFilesScanned,
                 totalCompilables,
                 totalIncludes);
 
@@ -2800,7 +2704,6 @@ namespace DatasulCompileGen.UI
                     SetRichTextPlain(_rtbScriptPreview, finalScript);
                     SwitchRightTab(false);
 
-                    _lblStatus.Text = "Arquivo .p salvo com sucesso em: " + dlg.FileName;
                     MessageBox.Show(this,
                         string.Format("Script de compilação salvo com sucesso!\n\nArquivo: {0}\nProgramas incluídos: {1}",
                             dlg.FileName,
@@ -2820,7 +2723,22 @@ namespace DatasulCompileGen.UI
             }
 
             Clipboard.SetText(_cachedScriptPreviewText);
-            _lblStatus.Text = "Código do script .p copiado para a área de transferência!";
+            Button btn = sender as Button;
+            if (btn != null)
+            {
+                object origContent = btn.Content;
+                btn.Content = "Copiado!";
+                System.Windows.Threading.DispatcherTimer timer = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(2)
+                };
+                timer.Tick += (s, ev) =>
+                {
+                    btn.Content = origContent;
+                    timer.Stop();
+                };
+                timer.Start();
+            }
         }
 
         private void OnOpenFolderClick(object sender, RoutedEventArgs e)
