@@ -376,7 +376,14 @@ namespace DatasulCompileGen.UI
 
             leftBrand.Children.Add(_headerIconBadge);
             leftBrand.Children.Add(titleStack);
+            Grid.SetColumn(leftBrand, 0);
             header.Children.Add(leftBrand);
+
+            _btnThemeToggle = CreateThemeToggleButton();
+            _btnThemeToggle.VerticalAlignment = VerticalAlignment.Center;
+            _btnThemeToggle.Click += (s, e) => ToggleTheme();
+            Grid.SetColumn(_btnThemeToggle, 1);
+            header.Children.Add(_btnThemeToggle);
 
             return header;
         }
@@ -459,11 +466,9 @@ namespace DatasulCompileGen.UI
             Grid.SetRow(row1, 0);
             grid.Children.Add(row1);
 
-            // Linha 2: Palavra-chave / Tabela + Botão Recentes + Buscar + Cancelar + Alternar Tema
+            // Linha 2: Palavra-chave / Tabela + Botão Recentes + Buscar + Cancelar
             Grid row2 = new Grid();
             row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
-            row2.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
             row2.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
@@ -522,12 +527,6 @@ namespace DatasulCompileGen.UI
             _btnCancel.Click += OnCancelSearchClick;
             Grid.SetColumn(_btnCancel, 6);
             row2.Children.Add(_btnCancel);
-
-            _btnThemeToggle = CreateThemeToggleButton();
-            _btnThemeToggle.VerticalAlignment = VerticalAlignment.Bottom;
-            _btnThemeToggle.Click += (s, e) => ToggleTheme();
-            Grid.SetColumn(_btnThemeToggle, 8);
-            row2.Children.Add(_btnThemeToggle);
 
             Grid.SetRow(row2, 2);
             grid.Children.Add(row2);
