@@ -22,38 +22,56 @@ namespace DatasulCompileGen.UI
 {
     public class MainForm : Window
     {
-        // Paleta de Cores UI/UX Pro Max (design-system/MASTER.md - Dark Slate OLED + Emerald/Blue)
-        private static readonly Color ColBgCanvas = Color.FromRgb(9, 13, 22);         // #090D16
-        private static readonly Color ColBgSurface = Color.FromRgb(17, 24, 39);       // #111827
-        private static readonly Color ColBgElevated = Color.FromRgb(30, 41, 59);      // #1E293B
-        private static readonly Color ColBgInput = Color.FromRgb(11, 17, 32);         // #0B1120
-        private static readonly Color ColBorderSubtle = Color.FromRgb(30, 41, 59);    // #1E293B
-        private static readonly Color ColBorderDefault = Color.FromRgb(51, 65, 85);   // #334155
-        private static readonly Color ColBorderFocus = Color.FromRgb(56, 189, 248);   // #38BDF8
-        private static readonly Color ColPrimaryBlue = Color.FromRgb(37, 99, 235);    // #2563EB
-        private static readonly Color ColPrimaryBlueHover = Color.FromRgb(59, 130, 246); // #3B82F6
-        private static readonly Color ColEmerald = Color.FromRgb(5, 150, 105);        // #059669
-        private static readonly Color ColEmeraldHover = Color.FromRgb(16, 185, 129);  // #10B981
-        private static readonly Color ColDanger = Color.FromRgb(220, 38, 38);         // #DC2626
-        private static readonly Color ColTextPrimary = Color.FromRgb(248, 250, 252);  // #F8FAFC
-        private static readonly Color ColTextSecondary = Color.FromRgb(148, 163, 184);// #94A3B8
-        private static readonly Color ColTextMuted = Color.FromRgb(100, 116, 139);    // #64748B
+        // Paletas de Cores UI/UX Pro Max (design-system/MASTER.md - Dark Slate OLED vs Light Clean Snow)
+        private static readonly Color ColDarkCanvas = Color.FromRgb(9, 13, 22);          // #090D16
+        private static readonly Color ColDarkSurface = Color.FromRgb(17, 24, 39);        // #111827
+        private static readonly Color ColDarkElevated = Color.FromRgb(30, 41, 59);       // #1E293B
+        private static readonly Color ColDarkInput = Color.FromRgb(11, 17, 32);          // #0B1120
+        private static readonly Color ColDarkBorderSubtle = Color.FromRgb(30, 41, 59);   // #1E293B
+        private static readonly Color ColDarkBorderDefault = Color.FromRgb(51, 65, 85);  // #334155
+        private static readonly Color ColDarkBorderFocus = Color.FromRgb(56, 189, 248);  // #38BDF8
+        private static readonly Color ColDarkTextPrimary = Color.FromRgb(248, 250, 252); // #F8FAFC
+        private static readonly Color ColDarkTextSecondary = Color.FromRgb(148, 163, 184);// #94A3B8
+        private static readonly Color ColDarkTextMuted = Color.FromRgb(100, 116, 139);   // #64748B
 
-        private static readonly SolidColorBrush BrushBgCanvas = Freeze(new SolidColorBrush(ColBgCanvas));
-        private static readonly SolidColorBrush BrushBgSurface = Freeze(new SolidColorBrush(ColBgSurface));
-        private static readonly SolidColorBrush BrushBgElevated = Freeze(new SolidColorBrush(ColBgElevated));
-        private static readonly SolidColorBrush BrushBgInput = Freeze(new SolidColorBrush(ColBgInput));
-        private static readonly SolidColorBrush BrushBorderSubtle = Freeze(new SolidColorBrush(ColBorderSubtle));
-        private static readonly SolidColorBrush BrushBorderDefault = Freeze(new SolidColorBrush(ColBorderDefault));
-        private static readonly SolidColorBrush BrushBorderFocus = Freeze(new SolidColorBrush(ColBorderFocus));
-        private static readonly SolidColorBrush BrushPrimaryBlue = Freeze(new SolidColorBrush(ColPrimaryBlue));
-        private static readonly SolidColorBrush BrushPrimaryBlueHover = Freeze(new SolidColorBrush(ColPrimaryBlueHover));
-        private static readonly SolidColorBrush BrushEmerald = Freeze(new SolidColorBrush(ColEmerald));
-        private static readonly SolidColorBrush BrushEmeraldHover = Freeze(new SolidColorBrush(ColEmeraldHover));
-        private static readonly SolidColorBrush BrushDanger = Freeze(new SolidColorBrush(ColDanger));
-        private static readonly SolidColorBrush BrushTextPrimary = Freeze(new SolidColorBrush(ColTextPrimary));
-        private static readonly SolidColorBrush BrushTextSecondary = Freeze(new SolidColorBrush(ColTextSecondary));
-        private static readonly SolidColorBrush BrushTextMuted = Freeze(new SolidColorBrush(ColTextMuted));
+        private static readonly Color ColLightCanvas = Color.FromRgb(241, 245, 249);     // #F1F5F9 (Slate 100)
+        private static readonly Color ColLightSurface = Color.FromRgb(255, 255, 255);    // #FFFFFF
+        private static readonly Color ColLightElevated = Color.FromRgb(226, 232, 240);   // #E2E8F0 (Slate 200)
+        private static readonly Color ColLightInput = Color.FromRgb(255, 255, 255);      // #FFFFFF
+        private static readonly Color ColLightBorderSubtle = Color.FromRgb(226, 232, 240);// #E2E8F0
+        private static readonly Color ColLightBorderDefault = Color.FromRgb(203, 213, 225);// #CBD5E1 (Slate 300)
+        private static readonly Color ColLightBorderFocus = Color.FromRgb(2, 132, 199);  // #0284C7 (Sky 600)
+        private static readonly Color ColLightTextPrimary = Color.FromRgb(15, 23, 42);   // #0F172A (Slate 900)
+        private static readonly Color ColLightTextSecondary = Color.FromRgb(71, 85, 105);// #475569 (Slate 600)
+        private static readonly Color ColLightTextMuted = Color.FromRgb(100, 116, 139);  // #64748B (Slate 500)
+
+        private static readonly Color ColPrimaryBlue = Color.FromRgb(37, 99, 235);       // #2563EB
+        private static readonly Color ColPrimaryBlueHover = Color.FromRgb(59, 130, 246);  // #3B82F6
+        private static readonly Color ColEmerald = Color.FromRgb(5, 150, 105);           // #059669
+        private static readonly Color ColEmeraldHover = Color.FromRgb(16, 185, 129);     // #10B981
+        private static readonly Color ColDanger = Color.FromRgb(220, 38, 38);            // #DC2626
+
+        // Pincéis Reativos Dinâmicos (não congelados para transição suave de tema)
+        private static readonly SolidColorBrush BrushBgCanvas = new SolidColorBrush(ColDarkCanvas);
+        private static readonly SolidColorBrush BrushBgSurface = new SolidColorBrush(ColDarkSurface);
+        private static readonly SolidColorBrush BrushBgElevated = new SolidColorBrush(ColDarkElevated);
+        private static readonly SolidColorBrush BrushBgInput = new SolidColorBrush(ColDarkInput);
+        private static readonly SolidColorBrush BrushBorderSubtle = new SolidColorBrush(ColDarkBorderSubtle);
+        private static readonly SolidColorBrush BrushBorderDefault = new SolidColorBrush(ColDarkBorderDefault);
+        private static readonly SolidColorBrush BrushBorderFocus = new SolidColorBrush(ColDarkBorderFocus);
+        private static readonly SolidColorBrush BrushPrimaryBlue = new SolidColorBrush(ColPrimaryBlue);
+        private static readonly SolidColorBrush BrushPrimaryBlueHover = new SolidColorBrush(ColPrimaryBlueHover);
+        private static readonly SolidColorBrush BrushEmerald = new SolidColorBrush(ColEmerald);
+        private static readonly SolidColorBrush BrushEmeraldHover = new SolidColorBrush(ColEmeraldHover);
+        private static readonly SolidColorBrush BrushDanger = new SolidColorBrush(ColDanger);
+        private static readonly SolidColorBrush BrushTextPrimary = new SolidColorBrush(ColDarkTextPrimary);
+        private static readonly SolidColorBrush BrushTextSecondary = new SolidColorBrush(ColDarkTextSecondary);
+        private static readonly SolidColorBrush BrushTextMuted = new SolidColorBrush(ColDarkTextMuted);
+
+        private static Color ColBgSurface { get { return BrushBgSurface.Color; } }
+        private static Color ColBorderDefault { get { return BrushBorderDefault.Color; } }
+        private static Color ColTextSecondary { get { return BrushTextSecondary.Color; } }
+        private static Color ColTextMuted { get { return BrushTextMuted.Color; } }
 
         // Ícones Vetoriais SVG (Lucide 24x24 Paths - Zero Emojis!)
         private const string SvgFolder = "M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z";
@@ -67,6 +85,8 @@ namespace DatasulCompileGen.UI
         private const string SvgExternal = "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6 M15 3h6v6 M10 14L21 3";
         private const string SvgLayers = "M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5";
         private const string SvgHistory = "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8 M3 3v5h5 M12 7v5l4 2";
+        private const string SvgSun = "M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M2 12h2 M20 12h2 M6.34 17.66l-1.41 1.41 M19.07 4.93l-1.41 1.41 M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z";
+        private const string SvgMoon = "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z";
 
         // Controles de Busca
         private TextBox _txtRootDir;
@@ -165,6 +185,13 @@ namespace DatasulCompileGen.UI
         private SearchReport _currentReport;
         private string _currentPreviewFilePath;
         private Border _selectedProgramCardBorder;
+        private int _currentPreviewTargetLine = 1;
+
+        // Alternância de Tema Dark / Light
+        private bool _isDarkMode = true;
+        private Button _btnThemeToggle;
+        private Border _headerIconBadge;
+        private System.Windows.Shapes.Path _headerIconPath;
 
         public MainForm()
             : this(null)
@@ -189,31 +216,35 @@ namespace DatasulCompileGen.UI
             Closing += (s, e) => SaveCurrentStateToCache();
         }
 
-        private static SolidColorBrush Freeze(SolidColorBrush brush)
-        {
-            brush.Freeze();
-            return brush;
-        }
-
         private void InitializeGlobalResources()
         {
-            // Estilos globais em XAML para eliminar 100% das bordas e scrollbars brancas legadas do Windows
-            string xamlResources = @"
+            UpdateGlobalResources(_isDarkMode);
+        }
+
+        private void UpdateGlobalResources(bool isDark)
+        {
+            string scrollTrack = isDark ? "#090D16" : "#F1F5F9";
+            string scrollThumb = isDark ? "#334155" : "#CBD5E1";
+            string progBg = isDark ? "#090D16" : "#F1F5F9";
+            string progBorder = isDark ? "#1E293B" : "#CBD5E1";
+            string progFg = isDark ? "#38BDF8" : "#0284C7";
+
+            string xamlResources = string.Format(@"
 <ResourceDictionary xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
                     xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>
-    <Style TargetType='{x:Type ScrollBar}'>
+    <Style TargetType='{{x:Type ScrollBar}}'>
         <Setter Property='Background' Value='Transparent'/>
         <Setter Property='Width' Value='8'/>
         <Setter Property='Template'>
             <Setter.Value>
-                <ControlTemplate TargetType='{x:Type ScrollBar}'>
-                    <Grid Background='#090D16' Width='8'>
+                <ControlTemplate TargetType='{{x:Type ScrollBar}}'>
+                    <Grid Background='{0}' Width='8'>
                         <Track x:Name='PART_Track' IsDirectionReversed='true'>
                             <Track.Thumb>
                                 <Thumb>
                                     <Thumb.Template>
-                                        <ControlTemplate TargetType='{x:Type Thumb}'>
-                                            <Border Background='#334155' CornerRadius='4' Margin='1'/>
+                                        <ControlTemplate TargetType='{{x:Type Thumb}}'>
+                                            <Border Background='{1}' CornerRadius='4' Margin='1'/>
                                         </ControlTemplate>
                                     </Thumb.Template>
                                 </Thumb>
@@ -230,24 +261,24 @@ namespace DatasulCompileGen.UI
             </Setter.Value>
         </Setter>
     </Style>
-    <Style TargetType='{x:Type ProgressBar}'>
-        <Setter Property='Background' Value='#090D16'/>
-        <Setter Property='Foreground' Value='#38BDF8'/>
-        <Setter Property='BorderBrush' Value='#1E293B'/>
+    <Style TargetType='{{x:Type ProgressBar}}'>
+        <Setter Property='Background' Value='{2}'/>
+        <Setter Property='Foreground' Value='{4}'/>
+        <Setter Property='BorderBrush' Value='{3}'/>
         <Setter Property='BorderThickness' Value='1'/>
         <Setter Property='Template'>
             <Setter.Value>
-                <ControlTemplate TargetType='{x:Type ProgressBar}'>
+                <ControlTemplate TargetType='{{x:Type ProgressBar}}'>
                     <Border x:Name='TemplateRoot'
-                            Background='{TemplateBinding Background}'
-                            BorderBrush='{TemplateBinding BorderBrush}'
-                            BorderThickness='{TemplateBinding BorderThickness}'
+                            Background='{{TemplateBinding Background}}'
+                            BorderBrush='{{TemplateBinding BorderBrush}}'
+                            BorderThickness='{{TemplateBinding BorderThickness}}'
                             CornerRadius='5'
                             SnapsToDevicePixels='True'>
                         <Grid x:Name='PART_Track' Margin='1'>
                             <Border x:Name='PART_Indicator'
                                     HorizontalAlignment='Left'
-                                    Background='{TemplateBinding Foreground}'
+                                    Background='{{TemplateBinding Foreground}}'
                                     CornerRadius='4'/>
                         </Grid>
                     </Border>
@@ -260,9 +291,10 @@ namespace DatasulCompileGen.UI
             </Setter.Value>
         </Setter>
     </Style>
-</ResourceDictionary>";
+</ResourceDictionary>", scrollTrack, scrollThumb, progBg, progBorder, progFg);
 
             ResourceDictionary dict = (ResourceDictionary)XamlReader.Parse(xamlResources);
+            Resources.MergedDictionaries.Clear();
             Resources.MergedDictionaries.Add(dict);
         }
 
@@ -318,7 +350,8 @@ namespace DatasulCompileGen.UI
 
             StackPanel leftBrand = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
 
-            Border iconBadge = new Border
+            _headerIconPath = CreateSvgIcon(SvgLayers, Color.FromRgb(96, 165, 250), 18);
+            _headerIconBadge = new Border
             {
                 Width = 36,
                 Height = 36,
@@ -327,7 +360,7 @@ namespace DatasulCompileGen.UI
                 BorderBrush = new SolidColorBrush(Color.FromRgb(59, 130, 246)),
                 BorderThickness = new Thickness(1),
                 Margin = new Thickness(0, 0, 12, 0),
-                Child = CreateSvgIcon(SvgLayers, Color.FromRgb(96, 165, 250), 18)
+                Child = _headerIconPath
             };
 
             StackPanel titleStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
@@ -345,7 +378,7 @@ namespace DatasulCompileGen.UI
                 Foreground = BrushTextSecondary
             });
 
-            leftBrand.Children.Add(iconBadge);
+            leftBrand.Children.Add(_headerIconBadge);
             leftBrand.Children.Add(titleStack);
             header.Children.Add(leftBrand);
 
@@ -397,7 +430,9 @@ namespace DatasulCompileGen.UI
                 new SolidColorBrush(Color.FromRgb(51, 65, 85)),
                 ColBorderDefault,
                 114,
-                36);
+                36,
+                BrushTextPrimary,
+                BrushTextSecondary);
             _btnRecentDirs.VerticalAlignment = VerticalAlignment.Bottom;
             _btnRecentDirs.ToolTip = "Selecionar um dos últimos diretórios utilizados";
             _btnRecentDirs.Click += OnRecentDirsClick;
@@ -428,9 +463,11 @@ namespace DatasulCompileGen.UI
             Grid.SetRow(row1, 0);
             grid.Children.Add(row1);
 
-            // Linha 2: Palavra-chave / Tabela + Botão Recentes + Buscar + Cancelar
+            // Linha 2: Palavra-chave / Tabela + Botão Recentes + Buscar + Cancelar + Alternar Tema
             Grid row2 = new Grid();
             row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            row2.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
             row2.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
@@ -453,7 +490,9 @@ namespace DatasulCompileGen.UI
                 new SolidColorBrush(Color.FromRgb(51, 65, 85)),
                 ColBorderDefault,
                 114,
-                36);
+                36,
+                BrushTextPrimary,
+                BrushTextSecondary);
             _btnRecentTerms.VerticalAlignment = VerticalAlignment.Bottom;
             _btnRecentTerms.ToolTip = "Selecionar uma das últimas palavras-chave ou tabelas pesquisadas";
             _btnRecentTerms.Click += OnRecentTermsClick;
@@ -487,6 +526,12 @@ namespace DatasulCompileGen.UI
             _btnCancel.Click += OnCancelSearchClick;
             Grid.SetColumn(_btnCancel, 6);
             row2.Children.Add(_btnCancel);
+
+            _btnThemeToggle = CreateThemeToggleButton();
+            _btnThemeToggle.VerticalAlignment = VerticalAlignment.Bottom;
+            _btnThemeToggle.Click += (s, e) => ToggleTheme();
+            Grid.SetColumn(_btnThemeToggle, 8);
+            row2.Children.Add(_btnThemeToggle);
 
             Grid.SetRow(row2, 2);
             grid.Children.Add(row2);
@@ -1251,7 +1296,7 @@ namespace DatasulCompileGen.UI
                        FontFamily='{{TemplateBinding FontFamily}}'
                        FontSize='{{TemplateBinding FontSize}}'
                        VerticalAlignment='Center'
-                       Margin='4,0,10,0'
+                       Margin='2,0,10,0'
                        IsHitTestVisible='False'
                        Visibility='Collapsed'/>
         </Grid>
@@ -1262,7 +1307,6 @@ namespace DatasulCompileGen.UI
         </Trigger>
         <Trigger Property='IsKeyboardFocused' Value='True'>
             <Setter TargetName='Bd' Property='BorderBrush' Value='#38BDF8'/>
-            <Setter TargetName='Bd' Property='Background' Value='#0F172A'/>
         </Trigger>
         <Trigger Property='IsMouseOver' Value='True'>
             <Setter TargetName='Bd' Property='BorderBrush' Value='#475569'/>
@@ -1274,7 +1318,7 @@ namespace DatasulCompileGen.UI
             return tb;
         }
 
-        private static CheckBox CreateRowCheckBox(bool isChecked)
+        private CheckBox CreateRowCheckBox(bool isChecked)
         {
             CheckBox cb = new CheckBox
             {
@@ -1284,15 +1328,21 @@ namespace DatasulCompileGen.UI
                 Cursor = Cursors.Hand
             };
 
-            string templateXaml = @"
+            string boxBg = _isDarkMode ? "#090D16" : "#FFFFFF";
+            string boxBorder = _isDarkMode ? "#475569" : "#CBD5E1";
+            string checkBg = _isDarkMode ? "#2563EB" : "#0284C7";
+            string checkBorder = _isDarkMode ? "#60A5FA" : "#38BDF8";
+            string hoverBorder = _isDarkMode ? "#38BDF8" : "#0284C7";
+
+            string templateXaml = string.Format(@"
 <ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
                  xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
-                 TargetType='{x:Type CheckBox}'>
+                 TargetType='{{x:Type CheckBox}}'>
     <Border x:Name='Box'
             Width='18' Height='18'
             CornerRadius='5'
-            Background='#090D16'
-            BorderBrush='#475569'
+            Background='{0}'
+            BorderBrush='{1}'
             BorderThickness='1.5'>
         <Path x:Name='CheckMark'
               Data='M4 9.5L7.5 13L14 5.5'
@@ -1305,15 +1355,15 @@ namespace DatasulCompileGen.UI
     </Border>
     <ControlTemplate.Triggers>
         <Trigger Property='IsChecked' Value='True'>
-            <Setter TargetName='Box' Property='Background' Value='#2563EB'/>
-            <Setter TargetName='Box' Property='BorderBrush' Value='#60A5FA'/>
+            <Setter TargetName='Box' Property='Background' Value='{2}'/>
+            <Setter TargetName='Box' Property='BorderBrush' Value='{3}'/>
             <Setter TargetName='CheckMark' Property='Visibility' Value='Visible'/>
         </Trigger>
         <Trigger Property='IsMouseOver' Value='True'>
-            <Setter TargetName='Box' Property='BorderBrush' Value='#38BDF8'/>
+            <Setter TargetName='Box' Property='BorderBrush' Value='{4}'/>
         </Trigger>
     </ControlTemplate.Triggers>
-</ControlTemplate>";
+</ControlTemplate>", boxBg, boxBorder, checkBg, checkBorder, hoverBorder);
 
             cb.Template = (ControlTemplate)XamlReader.Parse(templateXaml);
             return cb;
@@ -1328,6 +1378,34 @@ namespace DatasulCompileGen.UI
             double width,
             double height)
         {
+            return CreateActionButton(text, svgPath, normalBg, hoverBg, new SolidColorBrush(borderColor), width, height, Brushes.White, Brushes.White);
+        }
+
+        private static Button CreateActionButton(
+            string text,
+            string svgPath,
+            SolidColorBrush normalBg,
+            SolidColorBrush hoverBg,
+            Color borderColor,
+            double width,
+            double height,
+            Brush textBrush,
+            Brush iconBrush)
+        {
+            return CreateActionButton(text, svgPath, normalBg, hoverBg, new SolidColorBrush(borderColor), width, height, textBrush, iconBrush);
+        }
+
+        private static Button CreateActionButton(
+            string text,
+            string svgPath,
+            SolidColorBrush normalBg,
+            SolidColorBrush hoverBg,
+            SolidColorBrush borderBrush,
+            double width,
+            double height,
+            Brush textBrush,
+            Brush iconBrush)
+        {
             StackPanel content = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
@@ -1337,7 +1415,7 @@ namespace DatasulCompileGen.UI
 
             if (!string.IsNullOrEmpty(svgPath))
             {
-                UIElement icon = CreateSvgIcon(svgPath, Colors.White, 15);
+                UIElement icon = CreateSvgIcon(svgPath, iconBrush ?? Brushes.White, 15);
                 content.Children.Add(icon);
             }
 
@@ -1346,7 +1424,7 @@ namespace DatasulCompileGen.UI
                 Text = text,
                 FontSize = 12.5,
                 FontWeight = FontWeights.SemiBold,
-                Foreground = Brushes.White,
+                Foreground = textBrush ?? Brushes.White,
                 Margin = new Thickness(string.IsNullOrEmpty(svgPath) ? 0 : 8, 0, 0, 0),
                 VerticalAlignment = VerticalAlignment.Center
             });
@@ -1356,7 +1434,7 @@ namespace DatasulCompileGen.UI
                 Width = width,
                 Height = height,
                 Background = normalBg,
-                BorderBrush = new SolidColorBrush(borderColor),
+                BorderBrush = borderBrush,
                 BorderThickness = new Thickness(1),
                 Cursor = Cursors.Hand,
                 Content = content
@@ -1419,7 +1497,7 @@ namespace DatasulCompileGen.UI
             }
         }
 
-        private static Button CreateSegmentedOptionButton(string text, bool active)
+        private Button CreateSegmentedOptionButton(string text, bool active)
         {
             Button btn = new Button
             {
@@ -1436,13 +1514,18 @@ namespace DatasulCompileGen.UI
             return btn;
         }
 
-        private static void ApplySegmentedOptionVisual(Button btn, bool active)
+        private void ApplySegmentedOptionVisual(Button btn, bool active)
         {
+            if (btn == null) return;
             if (active)
             {
-                btn.Background = new SolidColorBrush(Color.FromRgb(30, 58, 138));
-                btn.BorderBrush = new SolidColorBrush(Color.FromRgb(59, 130, 246));
-                btn.Foreground = new SolidColorBrush(Color.FromRgb(224, 242, 254));
+                btn.Background = _isDarkMode 
+                    ? new SolidColorBrush(Color.FromRgb(30, 58, 138)) 
+                    : new SolidColorBrush(Color.FromRgb(2, 132, 199));
+                btn.BorderBrush = _isDarkMode 
+                    ? new SolidColorBrush(Color.FromRgb(59, 130, 246)) 
+                    : new SolidColorBrush(Color.FromRgb(3, 105, 161));
+                btn.Foreground = Brushes.White;
             }
             else
             {
@@ -1470,13 +1553,15 @@ namespace DatasulCompileGen.UI
             return (ControlTemplate)XamlReader.Parse(xaml);
         }
 
-        private static CheckBox CreateOptionPillCheckBox(string text, bool isChecked, bool highlightAccent)
+        private CheckBox CreateOptionPillCheckBox(string text, bool isChecked, bool highlightAccent)
         {
             CheckBox cb = new CheckBox
             {
                 Content = text,
                 IsChecked = isChecked,
-                Foreground = highlightAccent ? new SolidColorBrush(Color.FromRgb(125, 211, 252)) : BrushTextPrimary,
+                Foreground = highlightAccent 
+                    ? (_isDarkMode ? new SolidColorBrush(Color.FromRgb(125, 211, 252)) : new SolidColorBrush(Color.FromRgb(3, 105, 161)))
+                    : BrushTextPrimary,
                 FontSize = 12,
                 FontWeight = highlightAccent ? FontWeights.SemiBold : FontWeights.Normal,
                 Margin = new Thickness(0, 0, 18, 0),
@@ -1484,13 +1569,30 @@ namespace DatasulCompileGen.UI
                 Cursor = Cursors.Hand
             };
 
-            string templateXaml = @"
+            cb.Template = CreateOptionPillTemplate(_isDarkMode);
+            return cb;
+        }
+
+        private static ControlTemplate CreateOptionPillTemplate(bool isDark)
+        {
+            string pillBg = isDark ? "#0B1120" : "#FFFFFF";
+            string pillBorder = isDark ? "#334155" : "#CBD5E1";
+            string boxBg = isDark ? "#111827" : "#F8FAFC";
+            string boxBorder = isDark ? "#475569" : "#94A3B8";
+
+            string checkedBoxBg = isDark ? "#2563EB" : "#0284C7";
+            string checkedBoxBorder = isDark ? "#60A5FA" : "#38BDF8";
+            string checkedPillBorder = isDark ? "#1E3A8A" : "#93C5FD";
+            string checkedPillBg = isDark ? "#0F172A" : "#F0F9FF";
+            string hoverBorder = isDark ? "#38BDF8" : "#0284C7";
+
+            string templateXaml = string.Format(@"
 <ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
                  xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
-                 TargetType='{x:Type CheckBox}'>
+                 TargetType='{{x:Type CheckBox}}'>
     <Border x:Name='Pill'
-            Background='#0B1120'
-            BorderBrush='#334155'
+            Background='{0}'
+            BorderBrush='{1}'
             BorderThickness='1'
             CornerRadius='7'
             Padding='10,5,12,5'>
@@ -1498,8 +1600,8 @@ namespace DatasulCompileGen.UI
             <Border x:Name='Box'
                     Width='16' Height='16'
                     CornerRadius='4'
-                    Background='#111827'
-                    BorderBrush='#475569'
+                    Background='{2}'
+                    BorderBrush='{3}'
                     BorderThickness='1'
                     Margin='0,0,8,0'>
                 <Path x:Name='CheckMark'
@@ -1513,28 +1615,120 @@ namespace DatasulCompileGen.UI
     </Border>
     <ControlTemplate.Triggers>
         <Trigger Property='IsChecked' Value='True'>
-            <Setter TargetName='Box' Property='Background' Value='#2563EB'/>
-            <Setter TargetName='Box' Property='BorderBrush' Value='#60A5FA'/>
+            <Setter TargetName='Box' Property='Background' Value='{4}'/>
+            <Setter TargetName='Box' Property='BorderBrush' Value='{5}'/>
             <Setter TargetName='CheckMark' Property='Visibility' Value='Visible'/>
-            <Setter TargetName='Pill' Property='BorderBrush' Value='#1E3A8A'/>
-            <Setter TargetName='Pill' Property='Background' Value='#0F172A'/>
+            <Setter TargetName='Pill' Property='BorderBrush' Value='{6}'/>
+            <Setter TargetName='Pill' Property='Background' Value='{7}'/>
         </Trigger>
         <Trigger Property='IsMouseOver' Value='True'>
-            <Setter TargetName='Pill' Property='BorderBrush' Value='#38BDF8'/>
+            <Setter TargetName='Pill' Property='BorderBrush' Value='{8}'/>
         </Trigger>
     </ControlTemplate.Triggers>
-</ControlTemplate>";
+</ControlTemplate>", pillBg, pillBorder, boxBg, boxBorder, checkedBoxBg, checkedBoxBorder, checkedPillBorder, checkedPillBg, hoverBorder);
 
-            cb.Template = (ControlTemplate)XamlReader.Parse(templateXaml);
-            return cb;
+            return (ControlTemplate)XamlReader.Parse(templateXaml);
         }
 
-        private static UIElement CreateSvgIcon(string pathData, Color strokeColor, double size)
+        private void UpdateOptionPillTemplates(bool isDark)
+        {
+            ControlTemplate tpl = CreateOptionPillTemplate(isDark);
+            if (_chkTrackIncludes != null)
+            {
+                _chkTrackIncludes.Template = tpl;
+                _chkTrackIncludes.Foreground = isDark 
+                    ? new SolidColorBrush(Color.FromRgb(125, 211, 252)) 
+                    : new SolidColorBrush(Color.FromRgb(3, 105, 161));
+            }
+            if (_chkIgnoreComments != null)
+            {
+                _chkIgnoreComments.Template = tpl;
+            }
+            if (_chkWholeWord != null)
+            {
+                _chkWholeWord.Template = tpl;
+            }
+            if (_chkCaseSensitive != null)
+            {
+                _chkCaseSensitive.Template = tpl;
+            }
+        }
+
+        private Button CreateThemeToggleButton()
+        {
+            Button btn = new Button
+            {
+                Height = 36,
+                Padding = new Thickness(12, 0, 14, 0),
+                Background = BrushBgElevated,
+                BorderBrush = BrushBorderDefault,
+                BorderThickness = new Thickness(1),
+                Cursor = Cursors.Hand,
+                ToolTip = "Alternar entre Tema Claro e Tema Escuro (Ctrl+T)"
+            };
+            btn.Template = CreateRoundedButtonTemplate(8);
+            btn.MouseEnter += (s, e) =>
+            {
+                if (btn.IsEnabled)
+                {
+                    btn.Background = _isDarkMode 
+                        ? new SolidColorBrush(Color.FromRgb(51, 65, 85)) 
+                        : new SolidColorBrush(Color.FromRgb(203, 213, 225));
+                }
+            };
+            btn.MouseLeave += (s, e) =>
+            {
+                if (btn.IsEnabled)
+                {
+                    btn.Background = BrushBgElevated;
+                }
+            };
+            UpdateThemeToggleButtonContent(btn, _isDarkMode);
+            return btn;
+        }
+
+        private void UpdateThemeToggleButtonContent(Button btn, bool isDark)
+        {
+            if (btn == null) return;
+
+            StackPanel content = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            string iconData = isDark ? SvgSun : SvgMoon;
+            Color iconColor = isDark ? Color.FromRgb(245, 158, 11) : Color.FromRgb(99, 102, 241);
+            string text = isDark ? "Tema Claro" : "Tema Escuro";
+
+            UIElement icon = CreateSvgIcon(iconData, iconColor, 15);
+            content.Children.Add(icon);
+
+            content.Children.Add(new TextBlock
+            {
+                Text = text,
+                FontSize = 12.5,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = BrushTextPrimary,
+                Margin = new Thickness(8, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            });
+
+            btn.Content = content;
+        }
+
+        private static System.Windows.Shapes.Path CreateSvgIcon(string pathData, Color strokeColor, double size)
+        {
+            return CreateSvgIcon(pathData, new SolidColorBrush(strokeColor), size);
+        }
+
+        private static System.Windows.Shapes.Path CreateSvgIcon(string pathData, Brush strokeBrush, double size)
         {
             System.Windows.Shapes.Path path = new System.Windows.Shapes.Path
             {
                 Data = Geometry.Parse(pathData),
-                Stroke = new SolidColorBrush(strokeColor),
+                Stroke = strokeBrush,
                 StrokeThickness = 2,
                 StrokeStartLineCap = PenLineCap.Round,
                 StrokeEndLineCap = PenLineCap.Round,
@@ -2017,17 +2211,34 @@ namespace DatasulCompileGen.UI
             };
 
             bool isViaInc = item.IsIncludeMatch && !item.IsDirectMatch;
+            Color semBg;
+            Color semBorder;
+            Color semFg;
+
+            if (_isDarkMode)
+            {
+                semBg = isViaInc ? Color.FromRgb(12, 74, 110) : Color.FromRgb(6, 78, 59);
+                semBorder = isViaInc ? Color.FromRgb(2, 132, 199) : Color.FromRgb(5, 150, 105);
+                semFg = isViaInc ? Color.FromRgb(56, 189, 248) : Color.FromRgb(52, 211, 153);
+            }
+            else
+            {
+                semBg = isViaInc ? Color.FromRgb(224, 242, 254) : Color.FromRgb(209, 250, 229);
+                semBorder = isViaInc ? Color.FromRgb(56, 189, 248) : Color.FromRgb(52, 211, 153);
+                semFg = isViaInc ? Color.FromRgb(3, 105, 161) : Color.FromRgb(4, 120, 87);
+            }
+
             rightBadges.Children.Add(CreateSemanticBadge(
                 item.IsDirectMatch && item.IsIncludeMatch ? "DIRETO + .I" : (isViaInc ? "VIA INCLUDE .I" : "DIRETO"),
-                isViaInc ? Color.FromRgb(12, 74, 110) : Color.FromRgb(6, 78, 59),
-                isViaInc ? Color.FromRgb(2, 132, 199) : Color.FromRgb(5, 150, 105),
-                isViaInc ? Color.FromRgb(56, 189, 248) : Color.FromRgb(52, 211, 153)));
+                semBg,
+                semBorder,
+                semFg));
 
             rightBadges.Children.Add(CreateSemanticBadge(
                 string.Format("{0}x", item.TotalOccurrences),
-                ColBgSurface,
-                ColBorderDefault,
-                ColTextSecondary));
+                _isDarkMode ? ColDarkSurface : ColLightSurface,
+                _isDarkMode ? ColDarkBorderDefault : ColLightBorderDefault,
+                _isDarkMode ? ColDarkTextSecondary : ColLightTextSecondary));
 
             Grid.SetColumn(rightBadges, 2);
             g.Children.Add(rightBadges);
@@ -2043,7 +2254,9 @@ namespace DatasulCompileGen.UI
                 }
                 _selectedProgramCardBorder = rowBorder;
                 rowBorder.BorderBrush = BrushBorderFocus;
-                rowBorder.Background = new SolidColorBrush(Color.FromRgb(15, 23, 42));
+                rowBorder.Background = _isDarkMode 
+                    ? new SolidColorBrush(Color.FromRgb(15, 23, 42)) 
+                    : new SolidColorBrush(Color.FromRgb(224, 242, 254));
 
                 ShowFileInCodePreview(item, GetFirstRelevantLine(item));
             };
@@ -2175,24 +2388,24 @@ namespace DatasulCompileGen.UI
             {
                 rightBadges.Children.Add(CreateSemanticBadge(
                     string.Format("{0} prog. impactado(s)", impactedCompilablesCount),
-                    Color.FromRgb(69, 26, 3),
-                    Color.FromRgb(217, 119, 6),
-                    Color.FromRgb(251, 146, 60)));
+                    _isDarkMode ? Color.FromRgb(69, 26, 3) : Color.FromRgb(254, 243, 199),
+                    _isDarkMode ? Color.FromRgb(217, 119, 6) : Color.FromRgb(245, 158, 11),
+                    _isDarkMode ? Color.FromRgb(251, 146, 60) : Color.FromRgb(180, 83, 9)));
             }
             else
             {
                 rightBadges.Children.Add(CreateSemanticBadge(
                     "Include isolada",
-                    ColBgSurface,
-                    ColBorderDefault,
-                    ColTextMuted));
+                    _isDarkMode ? ColDarkSurface : ColLightSurface,
+                    _isDarkMode ? ColDarkBorderDefault : ColLightBorderDefault,
+                    _isDarkMode ? ColDarkTextMuted : ColLightTextMuted));
             }
 
             rightBadges.Children.Add(CreateSemanticBadge(
                 string.Format("{0}x", item.TotalOccurrences),
-                ColBgSurface,
-                ColBorderDefault,
-                ColTextSecondary));
+                _isDarkMode ? ColDarkSurface : ColLightSurface,
+                _isDarkMode ? ColDarkBorderDefault : ColLightBorderDefault,
+                _isDarkMode ? ColDarkTextSecondary : ColLightTextSecondary));
 
             Grid.SetColumn(rightBadges, 1);
             g.Children.Add(rightBadges);
@@ -2208,7 +2421,9 @@ namespace DatasulCompileGen.UI
                 }
                 _selectedProgramCardBorder = rowBorder;
                 rowBorder.BorderBrush = BrushBorderFocus;
-                rowBorder.Background = new SolidColorBrush(Color.FromRgb(15, 23, 42));
+                rowBorder.Background = _isDarkMode 
+                    ? new SolidColorBrush(Color.FromRgb(15, 23, 42)) 
+                    : new SolidColorBrush(Color.FromRgb(224, 242, 254));
 
                 ShowFileInCodePreview(item, GetFirstRelevantLine(item));
             };
@@ -2216,26 +2431,53 @@ namespace DatasulCompileGen.UI
             return rowBorder;
         }
 
-        private static Border CreateExtensionBadge(string ext)
+        private Border CreateExtensionBadge(string ext)
         {
             string label = (ext ?? ".p").ToUpperInvariant();
-            Color bg = Color.FromRgb(30, 27, 75);
-            Color fg = Color.FromRgb(165, 180, 252);
+            Color bg;
+            Color fg;
 
-            if (label.StartsWith(".W"))
+            if (_isDarkMode)
             {
-                bg = Color.FromRgb(59, 7, 100);
-                fg = Color.FromRgb(216, 180, 254);
+                bg = Color.FromRgb(30, 27, 75);
+                fg = Color.FromRgb(165, 180, 252);
+
+                if (label.StartsWith(".W"))
+                {
+                    bg = Color.FromRgb(59, 7, 100);
+                    fg = Color.FromRgb(216, 180, 254);
+                }
+                else if (label.StartsWith(".CLS"))
+                {
+                    bg = Color.FromRgb(69, 26, 3);
+                    fg = Color.FromRgb(252, 211, 77);
+                }
+                else if (label.StartsWith(".I"))
+                {
+                    bg = Color.FromRgb(67, 20, 7);
+                    fg = Color.FromRgb(253, 186, 116);
+                }
             }
-            else if (label.StartsWith(".CLS"))
+            else
             {
-                bg = Color.FromRgb(69, 26, 3);
-                fg = Color.FromRgb(252, 211, 77);
-            }
-            else if (label.StartsWith(".I"))
-            {
-                bg = Color.FromRgb(67, 20, 7);
-                fg = Color.FromRgb(253, 186, 116);
+                bg = Color.FromRgb(224, 231, 255); // Indigo 100
+                fg = Color.FromRgb(55, 48, 163);   // Indigo 800
+
+                if (label.StartsWith(".W"))
+                {
+                    bg = Color.FromRgb(243, 232, 255); // Purple 100
+                    fg = Color.FromRgb(107, 33, 168);  // Purple 800
+                }
+                else if (label.StartsWith(".CLS"))
+                {
+                    bg = Color.FromRgb(254, 243, 199); // Amber 100
+                    fg = Color.FromRgb(146, 64, 14);   // Amber 800
+                }
+                else if (label.StartsWith(".I"))
+                {
+                    bg = Color.FromRgb(255, 237, 213); // Orange 100
+                    fg = Color.FromRgb(154, 52, 18);   // Orange 800
+                }
             }
 
             return new Border
@@ -2454,6 +2696,7 @@ namespace DatasulCompileGen.UI
             }
 
             _currentPreviewFilePath = result.FilePath;
+            _currentPreviewTargetLine = targetLineNumber;
             _btnOpenFolder.IsEnabled = true;
             _lblCodePreviewFile.Text = result.RelativePath;
             _lblCodePreviewLineBadge.Text = string.Format("Linha {0}", targetLineNumber);
@@ -2502,7 +2745,9 @@ namespace DatasulCompileGen.UI
 
                 if (isTargetLine)
                 {
-                    gutterRun.Background = new SolidColorBrush(Color.FromRgb(30, 58, 95));
+                    gutterRun.Background = _isDarkMode 
+                        ? new SolidColorBrush(Color.FromRgb(30, 58, 95)) 
+                        : new SolidColorBrush(Color.FromRgb(224, 242, 254));
                     targetRunToBringIntoView = gutterRun;
                 }
 
@@ -2527,7 +2772,7 @@ namespace DatasulCompileGen.UI
             }
         }
 
-        private static void AppendLineWithTermHighlight(
+        private void AppendLineWithTermHighlight(
             Paragraph para,
             string lineText,
             string searchTerm,
@@ -2535,14 +2780,18 @@ namespace DatasulCompileGen.UI
             bool isTargetLine)
         {
             SolidColorBrush lineBg = isTargetLine
-                ? new SolidColorBrush(Color.FromRgb(30, 58, 95))
+                ? (_isDarkMode 
+                    ? new SolidColorBrush(Color.FromRgb(30, 58, 95)) 
+                    : new SolidColorBrush(Color.FromRgb(224, 242, 254)))
                 : Brushes.Transparent;
+
+            Brush targetFg = _isDarkMode ? Brushes.White : new SolidColorBrush(Color.FromRgb(15, 23, 42));
 
             if (string.IsNullOrEmpty(searchTerm) || string.IsNullOrEmpty(lineText))
             {
                 Run r = new Run(lineText ?? string.Empty)
                 {
-                    Foreground = isTargetLine ? Brushes.White : BrushTextPrimary,
+                    Foreground = isTargetLine ? targetFg : BrushTextPrimary,
                     Background = lineBg
                 };
                 para.Inlines.Add(r);
@@ -2557,7 +2806,7 @@ namespace DatasulCompileGen.UI
                 {
                     Run tail = new Run(lineText.Substring(idx))
                     {
-                        Foreground = isTargetLine ? Brushes.White : BrushTextPrimary,
+                        Foreground = isTargetLine ? targetFg : BrushTextPrimary,
                         Background = lineBg
                     };
                     para.Inlines.Add(tail);
@@ -2568,7 +2817,7 @@ namespace DatasulCompileGen.UI
                 {
                     Run before = new Run(lineText.Substring(idx, found - idx))
                     {
-                        Foreground = isTargetLine ? Brushes.White : BrushTextPrimary,
+                        Foreground = isTargetLine ? targetFg : BrushTextPrimary,
                         Background = lineBg
                     };
                     para.Inlines.Add(before);
@@ -2576,8 +2825,12 @@ namespace DatasulCompileGen.UI
 
                 Run matchRun = new Run(lineText.Substring(found, searchTerm.Length))
                 {
-                    Background = new SolidColorBrush(Color.FromRgb(180, 83, 9)),
-                    Foreground = new SolidColorBrush(Color.FromRgb(254, 240, 138)),
+                    Background = _isDarkMode 
+                        ? new SolidColorBrush(Color.FromRgb(180, 83, 9)) 
+                        : new SolidColorBrush(Color.FromRgb(254, 240, 138)),
+                    Foreground = _isDarkMode 
+                        ? new SolidColorBrush(Color.FromRgb(254, 240, 138)) 
+                        : new SolidColorBrush(Color.FromRgb(146, 64, 14)),
                     FontWeight = FontWeights.Bold
                 };
                 para.Inlines.Add(matchRun);
@@ -2771,6 +3024,8 @@ namespace DatasulCompileGen.UI
                     _cacheData = new AppCacheData();
                 }
 
+                ApplyTheme(_cacheData.IsDarkMode);
+
                 if (!string.IsNullOrWhiteSpace(_cacheData.LastRootDirectory))
                 {
                     _txtRootDir.Text = _cacheData.LastRootDirectory;
@@ -2836,6 +3091,7 @@ namespace DatasulCompileGen.UI
                 _cacheData = new AppCacheData();
             }
 
+            _cacheData.IsDarkMode = _isDarkMode;
             _cacheData.LastRootDirectory = _txtRootDir != null ? _txtRootDir.Text.Trim().Trim('"', '\'') : string.Empty;
             _cacheData.LastSearchTerm = _txtSearchTerm != null ? _txtSearchTerm.Text.Trim() : string.Empty;
             _cacheData.Extensions = _txtExtensions != null ? _txtExtensions.Text.Trim() : ".p, .w, .i, .cls";
@@ -3108,11 +3364,126 @@ namespace DatasulCompileGen.UI
             SaveCurrentStateToCache();
         }
 
-        // ── Atalhos Globais de Teclado (Ctrl+F, F3, Esc) ───────────────────────────
+        public bool IsDarkModeActive()
+        {
+            return _isDarkMode;
+        }
+
+        public void ToggleTheme()
+        {
+            ApplyTheme(!_isDarkMode);
+            SaveCurrentStateToCache();
+        }
+
+        public void ApplyTheme(bool isDark)
+        {
+            _isDarkMode = isDark;
+
+            // 1. Atualiza os pincéis reativos centrais
+            BrushBgCanvas.Color = isDark ? ColDarkCanvas : ColLightCanvas;
+            BrushBgSurface.Color = isDark ? ColDarkSurface : ColLightSurface;
+            BrushBgElevated.Color = isDark ? ColDarkElevated : ColLightElevated;
+            BrushBgInput.Color = isDark ? ColDarkInput : ColLightInput;
+            BrushBorderSubtle.Color = isDark ? ColDarkBorderSubtle : ColLightBorderSubtle;
+            BrushBorderDefault.Color = isDark ? ColDarkBorderDefault : ColLightBorderDefault;
+            BrushBorderFocus.Color = isDark ? ColDarkBorderFocus : ColLightBorderFocus;
+            BrushTextPrimary.Color = isDark ? ColDarkTextPrimary : ColLightTextPrimary;
+            BrushTextSecondary.Color = isDark ? ColDarkTextSecondary : ColLightTextSecondary;
+            BrushTextMuted.Color = isDark ? ColDarkTextMuted : ColLightTextMuted;
+
+            // 2. Janela
+            Background = BrushBgCanvas;
+            Foreground = BrushTextPrimary;
+
+            // 3. Recursos de ScrollBar e ProgressBar
+            UpdateGlobalResources(isDark);
+
+            // 4. Badge do Cabeçalho
+            if (_headerIconBadge != null && _headerIconPath != null)
+            {
+                _headerIconBadge.Background = isDark
+                    ? new SolidColorBrush(Color.FromRgb(23, 37, 84))
+                    : new SolidColorBrush(Color.FromRgb(224, 242, 254));
+                _headerIconBadge.BorderBrush = isDark
+                    ? new SolidColorBrush(Color.FromRgb(59, 130, 246))
+                    : new SolidColorBrush(Color.FromRgb(56, 189, 248));
+                _headerIconPath.Stroke = isDark
+                    ? new SolidColorBrush(Color.FromRgb(96, 165, 250))
+                    : new SolidColorBrush(Color.FromRgb(2, 132, 199));
+            }
+
+            // 5. Checkboxes de Opções de Busca
+            UpdateOptionPillTemplates(isDark);
+
+            // 6. Preview do Script .p
+            if (_rtbScriptPreview != null)
+            {
+                _rtbScriptPreview.Foreground = isDark
+                    ? new SolidColorBrush(Color.FromRgb(167, 243, 208))
+                    : new SolidColorBrush(Color.FromRgb(6, 95, 70));
+            }
+
+            // 7. Botão de Alternância de Tema
+            UpdateThemeToggleButtonContent(_btnThemeToggle, isDark);
+
+            // 8. Opções Segmentadas do Script
+            ApplySegmentedOptionVisual(_btnModeErrorLog, _scriptModeIndex == 0);
+            ApplySegmentedOptionVisual(_btnModePure, _scriptModeIndex == 1);
+            ApplySegmentedOptionVisual(_btnPathRelative, _pathFormatIndex == 0);
+            ApplySegmentedOptionVisual(_btnPathAbsolute, _pathFormatIndex == 1);
+
+            // 9. Barra Flutuante de Localização (Ctrl+F)
+            if (_findBarBorder != null)
+            {
+                _findBarBorder.Background = isDark
+                    ? new SolidColorBrush(Color.FromRgb(30, 41, 59))
+                    : new SolidColorBrush(Color.FromRgb(241, 245, 249));
+                _findBarBorder.BorderBrush = isDark
+                    ? new SolidColorBrush(Color.FromRgb(51, 65, 85))
+                    : new SolidColorBrush(Color.FromRgb(203, 213, 225));
+            }
+
+            // 10. Atualiza visualização de resultados e código se houver busca ativa
+            if (_currentReport != null)
+            {
+                PopulateCompilablesListView();
+                PopulateIncludesListView();
+                PopulateOccurrencesTreeView();
+
+                if (!string.IsNullOrEmpty(_currentPreviewFilePath))
+                {
+                    FileSearchResult currentItem = null;
+                    if (_currentReport.AllResults != null)
+                    {
+                        for (int i = 0; i < _currentReport.AllResults.Count; i++)
+                        {
+                            if (string.Equals(_currentReport.AllResults[i].FilePath, _currentPreviewFilePath, StringComparison.OrdinalIgnoreCase))
+                            {
+                                currentItem = _currentReport.AllResults[i];
+                                break;
+                            }
+                        }
+                    }
+                    if (currentItem != null)
+                    {
+                        ShowFileInCodePreview(currentItem, _currentPreviewTargetLine);
+                    }
+                }
+            }
+        }
+
+        // ── Atalhos Globais de Teclado (Ctrl+F, Ctrl+T, F3, Esc) ───────────────────
 
         protected override void OnPreviewKeyDown(KeyEventArgs e)
         {
             base.OnPreviewKeyDown(e);
+
+            if (e.Key == Key.T && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                ToggleTheme();
+                e.Handled = true;
+                return;
+            }
 
             if (e.Key == Key.F && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
             {

@@ -19,6 +19,7 @@ namespace DatasulCompileGen.Core
         public int PathFormatIndex { get; set; }
         public string FilterText { get; set; }
         public string LastExportDirectory { get; set; }
+        public bool IsDarkMode { get; set; }
         public List<string> RecentDirectories { get; set; }
         public List<string> RecentSearchTerms { get; set; }
 
@@ -35,6 +36,7 @@ namespace DatasulCompileGen.Core
             PathFormatIndex = 1; // 1 = AbsolutePath (Marcado por padrão!)
             FilterText = string.Empty;
             LastExportDirectory = string.Empty;
+            IsDarkMode = true;
             RecentDirectories = new List<string>();
             RecentSearchTerms = new List<string>();
         }
@@ -146,6 +148,9 @@ namespace DatasulCompileGen.Core
                         case "LastExportDirectory":
                             data.LastExportDirectory = val;
                             break;
+                        case "IsDarkMode":
+                            data.IsDarkMode = ParseBool(val, true);
+                            break;
                         case "RecentDir":
                             if (!string.IsNullOrWhiteSpace(val) &&
                                 !data.RecentDirectories.Any(d => string.Equals(d, val, StringComparison.OrdinalIgnoreCase)))
@@ -199,6 +204,7 @@ namespace DatasulCompileGen.Core
                 sb.AppendFormat("PathFormatIndex={0}", data.PathFormatIndex).AppendLine();
                 sb.AppendFormat("FilterText={0}", EscapeValue(data.FilterText)).AppendLine();
                 sb.AppendFormat("LastExportDirectory={0}", EscapeValue(data.LastExportDirectory)).AppendLine();
+                sb.AppendFormat("IsDarkMode={0}", data.IsDarkMode ? "true" : "false").AppendLine();
 
                 if (data.RecentDirectories != null)
                 {

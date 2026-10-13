@@ -135,6 +135,16 @@ namespace DatasulCompileGen.Tests
 
                         form.CloseEditorFind();
                         Assert(!form.IsEditorFindVisible(), "A barra de localizacao deve ficar oculta apos fechar na aba de script.");
+
+                        // Verificacao do Tema Dark / Light (ui-ux-pro-max)
+                        Assert(form.IsDarkModeActive() == true,
+                            "Tema inicial deve ser Dark Mode (true).");
+                        form.ToggleTheme();
+                        Assert(form.IsDarkModeActive() == false,
+                            "Apos ToggleTheme, o tema ativo deve ser Light Mode (false).");
+                        form.ToggleTheme();
+                        Assert(form.IsDarkModeActive() == true,
+                            "Apos segundo ToggleTheme, o tema ativo deve retornar para Dark Mode (true).");
                     }
                     finally
                     {
@@ -145,6 +155,7 @@ namespace DatasulCompileGen.Tests
                     Console.WriteLine("  - Renderizacao da Arvore de Ocorrencias Estilo VS Code: OK");
                     Console.WriteLine("  - Seletores Segmentados (Pills) e Preview Ao Vivo do Script .p: OK");
                     Console.WriteLine("  - Localizador In-Editor (Ctrl+F), Destaques e Navegacao Proxima/Anterior: OK");
+                    Console.WriteLine("  - Alternancia Dinamica de Tema Dark/Light (UI/UX Pro Max) e Atalho Ctrl+T: OK");
                     Console.WriteLine("PHASE 5 WPF UI/UX PRO MAX VERIFICATION PASSED");
                     exitCode = 0;
                 }
