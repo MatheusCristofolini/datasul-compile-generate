@@ -1282,7 +1282,7 @@ namespace DatasulCompileGen.UI
                 FontFamily = monospace ? new FontFamily("Consolas") : new FontFamily("Segoe UI"),
                 FontSize = monospace ? 13.5 : 13,
                 VerticalContentAlignment = VerticalAlignment.Center,
-                Padding = new Thickness(10, 0, 10, 0),
+                Padding = new Thickness(0),
                 Tag = placeholderText ?? string.Empty,
                 ToolTip = placeholderText
             };
@@ -1314,13 +1314,17 @@ namespace DatasulCompileGen.UI
                   Margin='4,0,0,0'/>
             <ScrollViewer Grid.Column='1'
                           x:Name='PART_ContentHost'
+                          Focusable='False'
+                          HorizontalScrollBarVisibility='Hidden'
+                          VerticalScrollBarVisibility='Hidden'
                           Margin='2,0,10,0'
                           VerticalAlignment='Center'/>
             <TextBlock Grid.Column='1'
                        x:Name='Watermark'
                        Text='{{TemplateBinding Tag}}'
                        Foreground='#64748B'
-                       FontSize='12.5'
+                       FontFamily='{{TemplateBinding FontFamily}}'
+                       FontSize='{{TemplateBinding FontSize}}'
                        VerticalAlignment='Center'
                        Margin='4,0,10,0'
                        IsHitTestVisible='False'
@@ -3263,6 +3267,7 @@ namespace DatasulCompileGen.UI
                 Height = 26,
                 Background = BrushBgCanvas,
                 Foreground = BrushTextPrimary,
+                CaretBrush = BrushBorderFocus,
                 BorderBrush = BrushBorderSubtle,
                 BorderThickness = new Thickness(1),
                 FontFamily = new FontFamily("Consolas"),
