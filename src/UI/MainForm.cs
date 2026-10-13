@@ -79,7 +79,6 @@ namespace DatasulCompileGen.UI
         private CheckBox _chkCaseSensitive;
         private Button _btnSearch;
         private Button _btnCancel;
-        private Button _btnQuickExport;
 
         // KPI Cards
         private TextBlock _lblKpiScanned;
@@ -327,20 +326,7 @@ namespace DatasulCompileGen.UI
 
             leftBrand.Children.Add(iconBadge);
             leftBrand.Children.Add(titleStack);
-            Grid.SetColumn(leftBrand, 0);
             header.Children.Add(leftBrand);
-
-            _btnQuickExport = CreateActionButton(
-                "Exportar Script .p...",
-                SvgDownload,
-                BrushEmerald,
-                BrushEmeraldHover,
-                Color.FromRgb(16, 185, 129),
-                175,
-                36);
-            _btnQuickExport.Click += OnSaveScriptClick;
-            Grid.SetColumn(_btnQuickExport, 1);
-            header.Children.Add(_btnQuickExport);
 
             return header;
         }
