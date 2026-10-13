@@ -126,6 +126,7 @@ namespace DatasulCompileGen.Core
         public SearchOptions Options { get; set; }
         public List<FileSearchResult> AllResults { get; set; }
         public List<FileSearchResult> CompilableResults { get; set; }
+        public List<FileSearchResult> IncludeResults { get; set; }
         public int TotalFilesScanned { get; set; }
         public long ElapsedMilliseconds { get; set; }
 
@@ -134,6 +135,7 @@ namespace DatasulCompileGen.Core
             Options = new SearchOptions();
             AllResults = new List<FileSearchResult>();
             CompilableResults = new List<FileSearchResult>();
+            IncludeResults = new List<FileSearchResult>();
         }
     }
 }

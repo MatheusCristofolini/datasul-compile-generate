@@ -61,8 +61,24 @@ namespace DatasulCompileGen.Tests
                         Assert(form.GetCompilableListViewCount() == 2,
                             "Lista de compilaveis deveria ter 2 cards (es0010.p e es0020.w), mas teve " + form.GetCompilableListViewCount());
 
+                        Assert(form.GetIncludeListViewCount() == 1,
+                            "Lista de includes (.i) deveria ter 1 card (include/es-tabela.i), mas teve " + form.GetIncludeListViewCount());
+
                         Assert(form.GetTreeNodesCount() == 3,
                             "Arvore estilo VS Code deveria ter 3 arquivos (2 compilaveis + 1 include), mas teve " + form.GetTreeNodesCount());
+
+                        // Alternar entre as 3 abas a esquerda: 0 = Compilaveis, 1 = Includes .i, 2 = Arvore VS Code
+                        Assert(form.GetSelectedLeftTabIndex() == 0,
+                            "Aba inicial deveria ser 0 (Compilaveis), mas foi " + form.GetSelectedLeftTabIndex());
+                        form.SwitchLeftTab(1);
+                        Assert(form.GetSelectedLeftTabIndex() == 1,
+                            "Aba ativa deveria ser 1 (Includes .i) apos SwitchLeftTab(1), mas foi " + form.GetSelectedLeftTabIndex());
+                        form.SwitchLeftTab(2);
+                        Assert(form.GetSelectedLeftTabIndex() == 2,
+                            "Aba ativa deveria ser 2 (Arvore VS Code) apos SwitchLeftTab(2), mas foi " + form.GetSelectedLeftTabIndex());
+                        form.SwitchLeftTab(0);
+                        Assert(form.GetSelectedLeftTabIndex() == 0,
+                            "Aba ativa deveria voltar a 0 (Compilaveis) apos SwitchLeftTab(0), mas foi " + form.GetSelectedLeftTabIndex());
 
                         // Modo padrao: Com Log de Erros no SESSION:TEMP-DIRECTORY + Caminho Absoluto Completo
                         string expectedAbs10 = Path.Combine(tempDir, "esp", "es0010.p").Replace('\\', '/');

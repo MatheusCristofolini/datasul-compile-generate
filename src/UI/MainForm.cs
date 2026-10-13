@@ -91,14 +91,20 @@ namespace DatasulCompileGen.UI
 
         // Painel Esquerdo (Segmented Tabs + Listas)
         private Button _btnTabCompilables;
+        private Button _btnTabIncludes;
         private Button _btnTabOccurrences;
         private Grid _viewCompilables;
+        private Grid _viewIncludes;
         private Grid _viewOccurrences;
         private TextBox _txtFilterCompilables;
+        private TextBox _txtFilterIncludes;
         private StackPanel _spCompilableItems;
+        private StackPanel _spIncludeItems;
         private StackPanel _spOccurrenceTree;
         private int _compilableRenderedCount;
+        private int _includeRenderedCount;
         private int _treeFileNodesCount;
+        private int _leftTabIndex;
 
         // Painel Direito (Segmented Tabs + Preview Código + Preview Script .p)
         private Button _btnTabCodePreview;
@@ -779,14 +785,17 @@ namespace DatasulCompileGen.UI
                 Padding = new Thickness(3)
             };
 
-            UniformGrid segButtons = new UniformGrid { Columns = 2 };
-            _btnTabCompilables = CreateSegmentedTabButton("Programas p/ Compilar (0)", true);
+            UniformGrid segButtons = new UniformGrid { Columns = 3 };
+            _btnTabCompilables = CreateSegmentedTabButton("Compiláveis (0)", true);
+            _btnTabIncludes = CreateSegmentedTabButton("Includes .i (0)", false);
             _btnTabOccurrences = CreateSegmentedTabButton("Árvore VS Code (0)", false);
 
-            _btnTabCompilables.Click += (s, e) => SwitchLeftTab(true);
-            _btnTabOccurrences.Click += (s, e) => SwitchLeftTab(false);
+            _btnTabCompilables.Click += (s, e) => SwitchLeftTab(0);
+            _btnTabIncludes.Click += (s, e) => SwitchLeftTab(1);
+            _btnTabOccurrences.Click += (s, e) => SwitchLeftTab(2);
 
             segButtons.Children.Add(_btnTabCompilables);
+            segButtons.Children.Add(_btnTabIncludes);
             segButtons.Children.Add(_btnTabOccurrences);
             segTrack.Child = segButtons;
 
@@ -838,7 +847,38 @@ namespace DatasulCompileGen.UI
             Grid.SetRow(svComp, 2);
             _viewCompilables.Children.Add(svComp);
 
-            // View 2: Árvore de Ocorrências Estilo VS Code
+            // View 2: Includes (.i)
+            _viewIncludes = new Grid { Visibility = Visibility.Collapsed };
+            _viewIncludes.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            _viewIncludes.RowDefinitions.Add(new RowDefinition { Height = new GridLength(8) });
+            _viewIncludes.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+            Grid filterBarInc = new Grid();
+            filterBarInc.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            _txtFilterIncludes = CreateModernTextBox(SvgSearch, "Filtrar includes na lista...", false);
+            _txtFilterIncludes.TextChanged += (s, e) => PopulateIncludesListView();
+            Grid.SetColumn(_txtFilterIncludes, 0);
+            filterBarInc.Children.Add(_txtFilterIncludes);
+
+            Grid.SetRow(filterBarInc, 0);
+            _viewIncludes.Children.Add(filterBarInc);
+
+            ScrollViewer svInc = new ScrollViewer
+            {
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+            };
+            _spIncludeItems = new StackPanel();
+            _spIncludeItems.Children.Add(BuildEmptyStateBlock(
+                "Nenhum include listado ainda",
+                "Realize uma busca para visualizar os arquivos de include (.i) que contêm o termo pesquisado."));
+            svInc.Content = _spIncludeItems;
+
+            Grid.SetRow(svInc, 2);
+            _viewIncludes.Children.Add(svInc);
+
+            // View 3: Árvore de Ocorrências Estilo VS Code
             _viewOccurrences = new Grid { Visibility = Visibility.Collapsed };
             ScrollViewer svTree = new ScrollViewer
             {
@@ -850,8 +890,10 @@ namespace DatasulCompileGen.UI
             _viewOccurrences.Children.Add(svTree);
 
             Grid.SetRow(_viewCompilables, 2);
+            Grid.SetRow(_viewIncludes, 2);
             Grid.SetRow(_viewOccurrences, 2);
             grid.Children.Add(_viewCompilables);
+            grid.Children.Add(_viewIncludes);
             grid.Children.Add(_viewOccurrences);
 
             card.Child = grid;
@@ -1616,12 +1658,20 @@ namespace DatasulCompileGen.UI
 
         // ── Navegação de Abas Segmentadas ──────────────────────────────────────────
 
-        private void SwitchLeftTab(bool showCompilables)
+        public void SwitchLeftTab(int tabIndex)
         {
-            ApplySegmentedTabVisual(_btnTabCompilables, showCompilables);
-            ApplySegmentedTabVisual(_btnTabOccurrences, !showCompilables);
-            _viewCompilables.Visibility = showCompilables ? Visibility.Visible : Visibility.Collapsed;
-            _viewOccurrences.Visibility = showCompilables ? Visibility.Collapsed : Visibility.Visible;
+            _leftTabIndex = tabIndex;
+            ApplySegmentedTabVisual(_btnTabCompilables, tabIndex == 0);
+            ApplySegmentedTabVisual(_btnTabIncludes, tabIndex == 1);
+            ApplySegmentedTabVisual(_btnTabOccurrences, tabIndex == 2);
+            _viewCompilables.Visibility = tabIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+            _viewIncludes.Visibility = tabIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
+            _viewOccurrences.Visibility = tabIndex == 2 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public void SwitchLeftTab(bool showCompilables)
+        {
+            SwitchLeftTab(showCompilables ? 0 : 2);
         }
 
         public void SwitchRightTab(bool showCodePreview)
@@ -1856,14 +1906,16 @@ namespace DatasulCompileGen.UI
             _txtSearchTerm.Text = report.Options.SearchTerm;
 
             PopulateCompilablesListView();
+            PopulateIncludesListView();
             PopulateOccurrencesTreeView();
             RefreshScriptPreview();
             UpdateKpiCards();
 
             int totalCompilables = report.CompilableResults.Count;
-            int totalIncludes = report.AllResults.Count(r => !r.IsCompilable);
+            int totalIncludes = report.IncludeResults != null ? report.IncludeResults.Count : report.AllResults.Count(r => !r.IsCompilable);
 
-            _btnTabCompilables.Content = string.Format("Programas p/ Compilar ({0})", totalCompilables);
+            _btnTabCompilables.Content = string.Format("Compiláveis ({0})", totalCompilables);
+            _btnTabIncludes.Content = string.Format("Includes .i ({0})", totalIncludes);
             _btnTabOccurrences.Content = string.Format("Árvore VS Code ({0})", report.AllResults.Count);
 
             int maxBar = Math.Max(1, report.TotalFilesScanned);
@@ -1897,6 +1949,12 @@ namespace DatasulCompileGen.UI
                 FileSearchResult first = report.CompilableResults.FirstOrDefault(r => r.IsDirectMatch)
                     ?? report.CompilableResults[0];
                 ShowFileInCodePreview(first, GetFirstRelevantLine(first));
+            }
+            else if (report.IncludeResults != null && report.IncludeResults.Count > 0)
+            {
+                FileSearchResult first = report.IncludeResults[0];
+                ShowFileInCodePreview(first, GetFirstRelevantLine(first));
+                SwitchLeftTab(1);
             }
             else if (report.AllResults.Count > 0)
             {
@@ -2064,6 +2122,171 @@ namespace DatasulCompileGen.UI
                 ColTextSecondary));
 
             Grid.SetColumn(rightBadges, 2);
+            g.Children.Add(rightBadges);
+
+            rowBorder.Child = g;
+
+            rowBorder.MouseLeftButtonDown += (s, e) =>
+            {
+                if (_selectedProgramCardBorder != null)
+                {
+                    _selectedProgramCardBorder.BorderBrush = BrushBorderSubtle;
+                    _selectedProgramCardBorder.Background = BrushBgInput;
+                }
+                _selectedProgramCardBorder = rowBorder;
+                rowBorder.BorderBrush = BrushBorderFocus;
+                rowBorder.Background = new SolidColorBrush(Color.FromRgb(15, 23, 42));
+
+                ShowFileInCodePreview(item, GetFirstRelevantLine(item));
+            };
+
+            return rowBorder;
+        }
+
+        private void PopulateIncludesListView()
+        {
+            _spIncludeItems.Children.Clear();
+            _includeRenderedCount = 0;
+
+            if (_currentReport == null || _currentReport.IncludeResults == null || _currentReport.IncludeResults.Count == 0)
+            {
+                _spIncludeItems.Children.Add(BuildEmptyStateBlock(
+                    "Nenhum arquivo include (.i) encontrado",
+                    "Nenhuma include com ocorrências para o termo pesquisado."));
+                return;
+            }
+
+            string filter = _txtFilterIncludes.Text.Trim();
+
+            foreach (FileSearchResult item in _currentReport.IncludeResults)
+            {
+                if (!string.IsNullOrEmpty(filter) &&
+                    item.RelativePath.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                UIElement rowCard = CreateIncludeProgramRowCard(item);
+                _spIncludeItems.Children.Add(rowCard);
+                _includeRenderedCount++;
+            }
+        }
+
+        private UIElement CreateIncludeProgramRowCard(FileSearchResult item)
+        {
+            Border rowBorder = new Border
+            {
+                Background = BrushBgInput,
+                BorderBrush = BrushBorderSubtle,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(10, 8, 10, 8),
+                Margin = new Thickness(0, 0, 4, 6),
+                Cursor = Cursors.Hand
+            };
+
+            Grid g = new Grid();
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Info
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Badges
+
+            StackPanel infoStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+
+            StackPanel titleRow = new StackPanel { Orientation = Orientation.Horizontal };
+            titleRow.Children.Add(CreateExtensionBadge(item.Extension));
+            titleRow.Children.Add(new TextBlock
+            {
+                Text = item.RelativePath,
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 13,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = BrushTextPrimary,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            infoStack.Children.Add(titleRow);
+
+            string detailText;
+            if (item.DirectMatches.Count > 0)
+            {
+                detailText = string.Format("Linha {0}: {1}", item.DirectMatches[0].LineNumber, item.DirectMatches[0].LineText.Trim());
+            }
+            else
+            {
+                detailText = string.Empty;
+            }
+
+            if (!string.IsNullOrEmpty(detailText))
+            {
+                infoStack.Children.Add(new TextBlock
+                {
+                    Text = detailText,
+                    FontFamily = new FontFamily("Consolas"),
+                    FontSize = 11,
+                    Foreground = BrushTextSecondary,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    Margin = new Thickness(0, 3, 0, 0)
+                });
+            }
+
+            Grid.SetColumn(infoStack, 0);
+            g.Children.Add(infoStack);
+
+            // Calcular quantos programas compiláveis dependem dessa include
+            int impactedCompilablesCount = 0;
+            if (_currentReport != null && _currentReport.CompilableResults != null)
+            {
+                for (int i = 0; i < _currentReport.CompilableResults.Count; i++)
+                {
+                    FileSearchResult comp = _currentReport.CompilableResults[i];
+                    if (comp.IncludeMatches != null && comp.IncludeMatches.Count > 0)
+                    {
+                        bool dep = false;
+                        for (int j = 0; j < comp.IncludeMatches.Count; j++)
+                        {
+                            IncludeChainStep inc = comp.IncludeMatches[j];
+                            if (string.Equals(inc.SourceIncludeFile, item.RelativePath, StringComparison.OrdinalIgnoreCase) ||
+                                (!string.IsNullOrEmpty(inc.ChainDescription) && inc.ChainDescription.IndexOf(item.RelativePath, StringComparison.OrdinalIgnoreCase) >= 0))
+                            {
+                                dep = true;
+                                break;
+                            }
+                        }
+                        if (dep) impactedCompilablesCount++;
+                    }
+                }
+            }
+
+            // Badges à direita (Impacto + Ocorrências)
+            StackPanel rightBadges = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(8, 0, 0, 0)
+            };
+
+            if (impactedCompilablesCount > 0)
+            {
+                rightBadges.Children.Add(CreateSemanticBadge(
+                    string.Format("{0} prog. impactado(s)", impactedCompilablesCount),
+                    Color.FromRgb(69, 26, 3),
+                    Color.FromRgb(217, 119, 6),
+                    Color.FromRgb(251, 146, 60)));
+            }
+            else
+            {
+                rightBadges.Children.Add(CreateSemanticBadge(
+                    "Include isolada",
+                    ColBgSurface,
+                    ColBorderDefault,
+                    ColTextMuted));
+            }
+
+            rightBadges.Children.Add(CreateSemanticBadge(
+                string.Format("{0}x", item.TotalOccurrences),
+                ColBgSurface,
+                ColBorderDefault,
+                ColTextSecondary));
+
+            Grid.SetColumn(rightBadges, 1);
             g.Children.Add(rightBadges);
 
             rowBorder.Child = g;
@@ -2913,6 +3136,16 @@ namespace DatasulCompileGen.UI
         public int GetCompilableListViewCount()
         {
             return _compilableRenderedCount;
+        }
+
+        public int GetIncludeListViewCount()
+        {
+            return _includeRenderedCount;
+        }
+
+        public int GetSelectedLeftTabIndex()
+        {
+            return _leftTabIndex;
         }
 
         public int GetTreeNodesCount()

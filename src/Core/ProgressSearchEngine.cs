@@ -307,10 +307,16 @@ namespace DatasulCompileGen.Core
                 .OrderBy(r => r.RelativePath, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
+            List<FileSearchResult> includeResults = allResults
+                .Where(r => !r.IsCompilable)
+                .OrderBy(r => r.RelativePath, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             SearchReport report = new SearchReport();
             report.Options = options;
             report.AllResults = allResults;
             report.CompilableResults = compilableResults;
+            report.IncludeResults = includeResults;
             report.TotalFilesScanned = totalFiles;
             report.ElapsedMilliseconds = stopwatch.ElapsedMilliseconds;
 
