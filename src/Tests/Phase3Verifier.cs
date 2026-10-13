@@ -64,18 +64,12 @@ namespace DatasulCompileGen.Tests
                         Assert(form.GetIncludeListViewCount() == 1,
                             "Lista de includes (.i) deveria ter 1 card (include/es-tabela.i), mas teve " + form.GetIncludeListViewCount());
 
-                        Assert(form.GetTreeNodesCount() == 3,
-                            "Arvore estilo VS Code deveria ter 3 arquivos (2 compilaveis + 1 include), mas teve " + form.GetTreeNodesCount());
-
-                        // Alternar entre as 3 abas a esquerda: 0 = Compilaveis, 1 = Includes .i, 2 = Arvore VS Code
+                        // Alternar entre as 2 abas a esquerda: 0 = Compilaveis, 1 = Includes .i
                         Assert(form.GetSelectedLeftTabIndex() == 0,
                             "Aba inicial deveria ser 0 (Compilaveis), mas foi " + form.GetSelectedLeftTabIndex());
                         form.SwitchLeftTab(1);
                         Assert(form.GetSelectedLeftTabIndex() == 1,
                             "Aba ativa deveria ser 1 (Includes .i) apos SwitchLeftTab(1), mas foi " + form.GetSelectedLeftTabIndex());
-                        form.SwitchLeftTab(2);
-                        Assert(form.GetSelectedLeftTabIndex() == 2,
-                            "Aba ativa deveria ser 2 (Arvore VS Code) apos SwitchLeftTab(2), mas foi " + form.GetSelectedLeftTabIndex());
                         form.SwitchLeftTab(0);
                         Assert(form.GetSelectedLeftTabIndex() == 0,
                             "Aba ativa deveria voltar a 0 (Compilaveis) apos SwitchLeftTab(0), mas foi " + form.GetSelectedLeftTabIndex());
@@ -152,7 +146,7 @@ namespace DatasulCompileGen.Tests
                     }
 
                     Console.WriteLine("  - Renderizacao dos Cards de Programas Compilaveis + Badges (DIRETO / VIA INCLUDE .I): OK");
-                    Console.WriteLine("  - Renderizacao da Arvore de Ocorrencias Estilo VS Code: OK");
+                    Console.WriteLine("  - Renderizacao das Abas Compilaveis e Includes .i: OK");
                     Console.WriteLine("  - Seletores Segmentados (Pills) e Preview Ao Vivo do Script .p: OK");
                     Console.WriteLine("  - Localizador In-Editor (Ctrl+F), Destaques e Navegacao Proxima/Anterior: OK");
                     Console.WriteLine("  - Alternancia Dinamica de Tema Dark/Light (UI/UX Pro Max) e Atalho Ctrl+T: OK");

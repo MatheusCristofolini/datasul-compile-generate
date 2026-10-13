@@ -112,18 +112,14 @@ namespace DatasulCompileGen.UI
         // Painel Esquerdo (Segmented Tabs + Listas)
         private Button _btnTabCompilables;
         private Button _btnTabIncludes;
-        private Button _btnTabOccurrences;
         private Grid _viewCompilables;
         private Grid _viewIncludes;
-        private Grid _viewOccurrences;
         private TextBox _txtFilterCompilables;
         private TextBox _txtFilterIncludes;
         private StackPanel _spCompilableItems;
         private StackPanel _spIncludeItems;
-        private StackPanel _spOccurrenceTree;
         private int _compilableRenderedCount;
         private int _includeRenderedCount;
-        private int _treeFileNodesCount;
         private int _leftTabIndex;
 
         // Painel Direito (Segmented Tabs + Preview Código + Preview Script .p)
@@ -821,18 +817,15 @@ namespace DatasulCompileGen.UI
                 Padding = new Thickness(3)
             };
 
-            UniformGrid segButtons = new UniformGrid { Columns = 3 };
+            UniformGrid segButtons = new UniformGrid { Columns = 2 };
             _btnTabCompilables = CreateSegmentedTabButton("Compiláveis (0)", true);
             _btnTabIncludes = CreateSegmentedTabButton("Includes .i (0)", false);
-            _btnTabOccurrences = CreateSegmentedTabButton("Árvore VS Code (0)", false);
 
             _btnTabCompilables.Click += (s, e) => SwitchLeftTab(0);
             _btnTabIncludes.Click += (s, e) => SwitchLeftTab(1);
-            _btnTabOccurrences.Click += (s, e) => SwitchLeftTab(2);
 
             segButtons.Children.Add(_btnTabCompilables);
             segButtons.Children.Add(_btnTabIncludes);
-            segButtons.Children.Add(_btnTabOccurrences);
             segTrack.Child = segButtons;
 
             Grid.SetRow(segTrack, 0);
@@ -914,23 +907,10 @@ namespace DatasulCompileGen.UI
             Grid.SetRow(svInc, 2);
             _viewIncludes.Children.Add(svInc);
 
-            // View 3: Árvore de Ocorrências Estilo VS Code
-            _viewOccurrences = new Grid { Visibility = Visibility.Collapsed };
-            ScrollViewer svTree = new ScrollViewer
-            {
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
-            };
-            _spOccurrenceTree = new StackPanel();
-            svTree.Content = _spOccurrenceTree;
-            _viewOccurrences.Children.Add(svTree);
-
             Grid.SetRow(_viewCompilables, 2);
             Grid.SetRow(_viewIncludes, 2);
-            Grid.SetRow(_viewOccurrences, 2);
             grid.Children.Add(_viewCompilables);
             grid.Children.Add(_viewIncludes);
-            grid.Children.Add(_viewOccurrences);
 
             card.Child = grid;
             return card;
@@ -1786,15 +1766,13 @@ namespace DatasulCompileGen.UI
             _leftTabIndex = tabIndex;
             ApplySegmentedTabVisual(_btnTabCompilables, tabIndex == 0);
             ApplySegmentedTabVisual(_btnTabIncludes, tabIndex == 1);
-            ApplySegmentedTabVisual(_btnTabOccurrences, tabIndex == 2);
             _viewCompilables.Visibility = tabIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
             _viewIncludes.Visibility = tabIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
-            _viewOccurrences.Visibility = tabIndex == 2 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         public void SwitchLeftTab(bool showCompilables)
         {
-            SwitchLeftTab(showCompilables ? 0 : 2);
+            SwitchLeftTab(showCompilables ? 0 : 1);
         }
 
         public void SwitchRightTab(bool showCodePreview)
@@ -2016,7 +1994,6 @@ namespace DatasulCompileGen.UI
 
             PopulateCompilablesListView();
             PopulateIncludesListView();
-            PopulateOccurrencesTreeView();
             RefreshScriptPreview();
             UpdateKpiCards();
 
@@ -2025,7 +2002,6 @@ namespace DatasulCompileGen.UI
 
             _btnTabCompilables.Content = string.Format("Compiláveis ({0})", totalCompilables);
             _btnTabIncludes.Content = string.Format("Includes .i ({0})", totalIncludes);
-            _btnTabOccurrences.Content = string.Format("Árvore VS Code ({0})", report.AllResults.Count);
 
             int maxBar = Math.Max(1, report.TotalFilesScanned);
             _mainProgressBar.IsIndeterminate = false;
@@ -2517,139 +2493,6 @@ namespace DatasulCompileGen.UI
                     Foreground = new SolidColorBrush(fg)
                 }
             };
-        }
-
-        private void PopulateOccurrencesTreeView()
-        {
-            _spOccurrenceTree.Children.Clear();
-            _treeFileNodesCount = 0;
-
-            if (_currentReport == null || _currentReport.AllResults.Count == 0)
-            {
-                _spOccurrenceTree.Children.Add(BuildEmptyStateBlock(
-                    "Nenhuma ocorrência para exibir",
-                    "Realize uma busca para visualizar a árvore de arquivos e linhas no estilo VS Code."));
-                return;
-            }
-
-            foreach (FileSearchResult fileResult in _currentReport.AllResults)
-            {
-                _treeFileNodesCount++;
-
-                Border fileCard = new Border
-                {
-                    Background = BrushBgInput,
-                    BorderBrush = BrushBorderSubtle,
-                    BorderThickness = new Thickness(1),
-                    CornerRadius = new CornerRadius(8),
-                    Padding = new Thickness(10, 8, 10, 8),
-                    Margin = new Thickness(0, 0, 4, 8)
-                };
-
-                StackPanel fileStack = new StackPanel();
-
-                // Header do Arquivo
-                StackPanel headerRow = new StackPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    Margin = new Thickness(0, 0, 0, 6),
-                    Cursor = Cursors.Hand
-                };
-                headerRow.Children.Add(CreateExtensionBadge(fileResult.Extension));
-                headerRow.Children.Add(new TextBlock
-                {
-                    Text = fileResult.RelativePath,
-                    FontFamily = new FontFamily("Consolas"),
-                    FontSize = 12.5,
-                    FontWeight = FontWeights.Bold,
-                    Foreground = BrushTextPrimary,
-                    VerticalAlignment = VerticalAlignment.Center
-                });
-                headerRow.Children.Add(CreateSemanticBadge(
-                    fileResult.IsCompilable ? "COMPILÁVEL" : "INCLUDE .I",
-                    fileResult.IsCompilable ? Color.FromRgb(6, 78, 59) : Color.FromRgb(69, 26, 3),
-                    fileResult.IsCompilable ? Color.FromRgb(5, 150, 105) : Color.FromRgb(217, 119, 6),
-                    fileResult.IsCompilable ? Color.FromRgb(52, 211, 153) : Color.FromRgb(251, 191, 36)));
-
-                FileSearchResult capturedFile = fileResult;
-                headerRow.MouseLeftButtonDown += (s, e) =>
-                {
-                    ShowFileInCodePreview(capturedFile, GetFirstRelevantLine(capturedFile));
-                    SwitchRightTab(true);
-                };
-                fileStack.Children.Add(headerRow);
-
-                // Linhas diretas encontradas
-                foreach (LineMatch match in fileResult.DirectMatches)
-                {
-                    int lineNo = match.LineNumber;
-                    Border lineBtn = CreateTreeLineItem(
-                        string.Format("Linha {0,4}", lineNo),
-                        match.LineText.Trim(),
-                        Color.FromRgb(56, 189, 248),
-                        () =>
-                        {
-                            ShowFileInCodePreview(capturedFile, lineNo);
-                            SwitchRightTab(true);
-                        });
-                    fileStack.Children.Add(lineBtn);
-                }
-
-                // Linhas de Include
-                foreach (IncludeChainStep step in fileResult.IncludeMatches)
-                {
-                    int lineNo = step.LineNumber;
-                    Border incBtn = CreateTreeLineItem(
-                        string.Format("Linha {0,4} [Include]", lineNo),
-                        string.Format("{0}   ({1})", step.LineText.Trim(), step.ChainDescription),
-                        Color.FromRgb(129, 140, 248),
-                        () =>
-                        {
-                            ShowFileInCodePreview(capturedFile, lineNo);
-                            SwitchRightTab(true);
-                        });
-                    fileStack.Children.Add(incBtn);
-                }
-
-                fileCard.Child = fileStack;
-                _spOccurrenceTree.Children.Add(fileCard);
-            }
-        }
-
-        private static Border CreateTreeLineItem(string lineBadgeText, string codeSnippet, Color badgeColor, Action onClick)
-        {
-            Border b = new Border
-            {
-                Background = BrushBgSurface,
-                CornerRadius = new CornerRadius(6),
-                Padding = new Thickness(8, 5, 8, 5),
-                Margin = new Thickness(12, 2, 0, 2),
-                Cursor = Cursors.Hand
-            };
-
-            StackPanel sp = new StackPanel { Orientation = Orientation.Horizontal };
-            sp.Children.Add(new TextBlock
-            {
-                Text = lineBadgeText + " : ",
-                FontFamily = new FontFamily("Consolas"),
-                FontSize = 11.5,
-                FontWeight = FontWeights.Bold,
-                Foreground = new SolidColorBrush(badgeColor)
-            });
-            sp.Children.Add(new TextBlock
-            {
-                Text = codeSnippet,
-                FontFamily = new FontFamily("Consolas"),
-                FontSize = 11.5,
-                Foreground = BrushTextSecondary,
-                TextTrimming = TextTrimming.CharacterEllipsis
-            });
-
-            b.Child = sp;
-            b.MouseEnter += (s, e) => b.Background = BrushBgElevated;
-            b.MouseLeave += (s, e) => b.Background = BrushBgSurface;
-            b.MouseLeftButtonDown += (s, e) => onClick();
-            return b;
         }
 
         private void SetAllCompilableChecks(bool checkState)
@@ -3328,7 +3171,7 @@ namespace DatasulCompileGen.UI
 
         public int GetTreeNodesCount()
         {
-            return _treeFileNodesCount;
+            return 0;
         }
 
         public string GetGeneratedScriptPreviewText()
@@ -3448,7 +3291,6 @@ namespace DatasulCompileGen.UI
             {
                 PopulateCompilablesListView();
                 PopulateIncludesListView();
-                PopulateOccurrencesTreeView();
 
                 if (!string.IsNullOrEmpty(_currentPreviewFilePath))
                 {
